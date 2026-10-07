@@ -1,0 +1,14 @@
+{
+  "name": "flight-booking-backend",
+  "version": "1.0.0",
+  "description": "Supabase backend (schema + RPC) for the OneInbox flight booking voice agent demo",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/smoke-test.mjs",
+    "test:full": "node tests/full-test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5"
+  }
+}
