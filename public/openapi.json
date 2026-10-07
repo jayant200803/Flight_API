@@ -6,152 +6,353 @@
     "description": "Backend for the Nordic Sky (OneInbox) flight booking voice-agent demo.\n\nAll logic runs as PostgreSQL functions exposed through Supabase's auto REST layer — **there is no separate server**. Each endpoint is a `POST` to `/rest/v1/rpc/{function}` with a JSON body of arguments.\n\n**Auth is already wired** on this page (publishable key, safe for the browser — tables are protected by Row Level Security). Just open an endpoint, click **Try it out**, then **Execute**.\n\n**Demo data:** booking `NS7K2Q` (Ingrid Solberg) on route **OSL → LHR, 2026-10-01**. Flight `NS1156` is cheapest (−€60), `NS1120` is sold out, `NS1180` has low availability.\n\n**Note:** errors come back with HTTP 200 and an `{ \"error\": \"...\" }` body — always check for an `error` key."
   },
   "servers": [
-    { "url": "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1", "description": "Supabase (Flight Usecase project)" }
+    {
+      "url": "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1",
+      "description": "Supabase (Flight Usecase project)"
+    }
   ],
   "tags": [
-    { "name": "Booking", "description": "Retrieve, modify and confirm a booking" },
-    { "name": "Flights & Seats", "description": "Search flights and view seat maps" }
+    {
+      "name": "Booking",
+      "description": "Retrieve, modify and confirm a booking"
+    },
+    {
+      "name": "Flights",
+      "description": "Search flights and view seat maps"
+    }
   ],
   "components": {
     "securitySchemes": {
-      "apikey": { "type": "apiKey", "in": "header", "name": "apikey", "description": "Supabase publishable key" },
-      "authorization": { "type": "apiKey", "in": "header", "name": "Authorization", "description": "Bearer <publishable key>" }
+      "apikey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apikey",
+        "description": "Supabase publishable key"
+      },
+      "authorization": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Bearer <publishable key>"
+      }
     }
   },
-  "security": [ { "apikey": [], "authorization": [] } ],
+  "security": [
+    {
+      "apikey": [],
+      "authorization": []
+    }
+  ],
   "paths": {
     "/rpc/get_booking": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Get current booking",
         "description": "Retrieve the full booking: flight, seat, baggage, pricing breakdown and status.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref"],
-            "properties": { "p_ref": { "type": "string", "description": "Booking reference", "example": "NS7K2Q" } }
-          } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "description": "Booking reference",
+                    "example": "NS7K2Q"
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Booking object (or { error } if not found)" } }
+        "responses": {
+          "200": {
+            "description": "Booking object (or { error } if not found)"
+          }
+        },
+        "operationId": "get_booking"
       }
     },
     "/rpc/search_flights": {
       "post": {
-        "tags": ["Flights & Seats"],
+        "tags": [
+          "Flights"
+        ],
         "summary": "Search flights",
         "description": "Returns up to 6 flights for a route/date with `price_delta` (vs the current booking) and `available_seats`.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_origin", "p_destination", "p_date"],
-            "properties": {
-              "p_origin": { "type": "string", "description": "Origin airport (IATA)", "example": "OSL" },
-              "p_destination": { "type": "string", "description": "Destination airport (IATA)", "example": "LHR" },
-              "p_date": { "type": "string", "format": "date", "description": "Departure date", "example": "2026-10-01" },
-              "p_ref": { "type": "string", "description": "Booking ref (for price delta baseline)", "example": "NS7K2Q" }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_origin",
+                  "p_destination",
+                  "p_date"
+                ],
+                "properties": {
+                  "p_origin": {
+                    "type": "string",
+                    "description": "Origin airport (IATA)",
+                    "example": "OSL"
+                  },
+                  "p_destination": {
+                    "type": "string",
+                    "description": "Destination airport (IATA)",
+                    "example": "LHR"
+                  },
+                  "p_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Departure date",
+                    "example": "2026-10-01"
+                  },
+                  "p_ref": {
+                    "type": "string",
+                    "description": "Booking ref (for price delta baseline)",
+                    "example": "NS7K2Q"
+                  }
+                }
+              }
             }
-          } } }
+          }
         },
-        "responses": { "200": { "description": "Array of flights" } }
+        "responses": {
+          "200": {
+            "description": "Array of flights"
+          }
+        },
+        "operationId": "search_flights"
       }
     },
     "/rpc/change_flight": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Change flight",
         "description": "Move the booking to a new flight. Clears the current seat selection and recomputes the price.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref", "p_new_flight_number"],
-            "properties": {
-              "p_ref": { "type": "string", "example": "NS7K2Q" },
-              "p_new_flight_number": { "type": "string", "description": "Target flight number", "example": "NS1156" }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref",
+                  "p_new_flight_number"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "example": "NS7K2Q"
+                  },
+                  "p_new_flight_number": {
+                    "type": "string",
+                    "description": "Target flight number",
+                    "example": "NS1156"
+                  }
+                }
+              }
             }
-          } } }
+          }
         },
-        "responses": { "200": { "description": "Updated booking (or { error })" } }
+        "responses": {
+          "200": {
+            "description": "Updated booking (or { error })"
+          }
+        },
+        "operationId": "change_flight"
       }
     },
     "/rpc/get_seat_map": {
       "post": {
-        "tags": ["Flights & Seats"],
+        "tags": [
+          "Flights"
+        ],
         "summary": "Get seat map",
         "description": "Returns all 180 seats for a flight: seat number, row/column, type (window/aisle/emergency_row), status and surcharge.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_flight_number"],
-            "properties": { "p_flight_number": { "type": "string", "example": "NS1156" } }
-          } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_flight_number"
+                ],
+                "properties": {
+                  "p_flight_number": {
+                    "type": "string",
+                    "example": "NS1156"
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Array of seats" } }
+        "responses": {
+          "200": {
+            "description": "Array of seats"
+          }
+        },
+        "operationId": "get_seat_map"
       }
     },
     "/rpc/change_seat": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Change seat",
         "description": "Select a seat on the current flight. Applies the seat surcharge (window €0 / front row €15 / emergency row €25).",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref", "p_new_seat_number"],
-            "properties": {
-              "p_ref": { "type": "string", "example": "NS7K2Q" },
-              "p_new_seat_number": { "type": "string", "description": "Seat to select", "example": "6A" }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref",
+                  "p_new_seat_number"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "example": "NS7K2Q"
+                  },
+                  "p_new_seat_number": {
+                    "type": "string",
+                    "description": "Seat to select",
+                    "example": "6A"
+                  }
+                }
+              }
             }
-          } } }
+          }
         },
-        "responses": { "200": { "description": "Updated booking (or { error: seat_not_found | seat_unavailable })" } }
+        "responses": {
+          "200": {
+            "description": "Updated booking (or { error: seat_not_found | seat_unavailable })"
+          }
+        },
+        "operationId": "change_seat"
       }
     },
     "/rpc/change_baggage": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Change baggage",
         "description": "Set the number of checked bags. 1 bag is included; each extra bag is €45. Minimum 1.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref", "p_baggage_count"],
-            "properties": {
-              "p_ref": { "type": "string", "example": "NS7K2Q" },
-              "p_baggage_count": { "type": "integer", "minimum": 1, "description": "Total bags", "example": 2 }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref",
+                  "p_baggage_count"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "example": "NS7K2Q"
+                  },
+                  "p_baggage_count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Total bags",
+                    "example": 2
+                  }
+                }
+              }
             }
-          } } }
+          }
         },
-        "responses": { "200": { "description": "Updated booking (or { error: min_one_bag })" } }
+        "responses": {
+          "200": {
+            "description": "Updated booking (or { error: min_one_bag })"
+          }
+        },
+        "operationId": "change_baggage"
       }
     },
     "/rpc/quote_booking": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Quote changes",
         "description": "Itemised price change vs the last confirmed state: `{ flight_change, seat_change, baggage_change, total_change }`. Negative total = refund/saving.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref"],
-            "properties": { "p_ref": { "type": "string", "example": "NS7K2Q" } }
-          } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "example": "NS7K2Q"
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Quote breakdown" } }
+        "responses": {
+          "200": {
+            "description": "Quote breakdown"
+          }
+        },
+        "operationId": "quote_booking"
       }
     },
     "/rpc/confirm_booking": {
       "post": {
-        "tags": ["Booking"],
+        "tags": [
+          "Booking"
+        ],
         "summary": "Confirm booking",
         "description": "Locks the booking, issues a boarding pass reference, syncs CRM and flags email (email/PDF are stubs). Resets the quote baseline.",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": {
-            "type": "object", "required": ["p_ref"],
-            "properties": { "p_ref": { "type": "string", "example": "NS7K2Q" } }
-          } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_ref"
+                ],
+                "properties": {
+                  "p_ref": {
+                    "type": "string",
+                    "example": "NS7K2Q"
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": { "200": { "description": "Confirmation + boarding pass" } }
+        "responses": {
+          "200": {
+            "description": "Confirmation + boarding pass"
+          }
+        },
+        "operationId": "confirm_booking"
       }
     }
   }
