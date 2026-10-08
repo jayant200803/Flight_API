@@ -176,7 +176,7 @@ drop function if exists get_seat_map(text, boolean);
 drop function if exists get_seat_map(text, boolean, text);
 create or replace function get_seat_map(p_flight_number text, p_summary_only boolean default false, p_ref text default null)
 returns json language plpgsql security definer set search_path = public as $$
-declare arr jsonb; win text; ais text; mid text; emr text; frnt text; avail int; tot int;
+declare arr jsonb; booked jsonb; win text; ais text; mid text; emr text; frnt text; avail int; tot int;
 begin
   select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb) into arr
   from (
@@ -213,8 +213,12 @@ begin
     from seats s join flights f on f.flight_id = s.flight_id
    where upper(f.flight_number) = upper(p_flight_number);
 
-  -- UI event always carries the FULL seat list (for drawing the plane)
-  perform _emit(p_ref, 'seats_shown', jsonb_build_object('flight_number', p_flight_number, 'seats', arr));
+  -- UI event carries only the booked/blocked seats (the screen already knows the
+  -- layout + prices, so this keeps the broadcast small).
+  select coalesce(jsonb_agg(s.seat_number order by s.row_number, s.column_letter), '[]'::jsonb) into booked
+    from seats s join flights f on f.flight_id = s.flight_id
+   where upper(f.flight_number) = upper(p_flight_number) and s.status in ('booked','blocked');
+  perform _emit(p_ref, 'seats_shown', jsonb_build_object('flight_number', p_flight_number, 'booked_seats', booked));
 
   if p_summary_only then
     return json_build_object(
@@ -235,12 +239,11 @@ drop function if exists get_seat_options(text);
 drop function if exists get_seat_options(text, text);
 create or replace function get_seat_options(p_flight_number text, p_ref text default null)
 returns json language plpgsql security definer set search_path = public as $$
-declare arr jsonb; win text; ais text; mid text; emr text; frnt text; avail int;
+declare booked jsonb; win text; ais text; mid text; emr text; frnt text; avail int;
 begin
-  select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb) into arr
-  from (select s.seat_number, s.row_number, s.column_letter, s.seat_type, s.status, s.base_price_delta
-        from seats s join flights f on f.flight_id = s.flight_id
-        where upper(f.flight_number) = upper(p_flight_number)) t;
+  select coalesce(jsonb_agg(s.seat_number order by s.row_number, s.column_letter), '[]'::jsonb) into booked
+    from seats s join flights f on f.flight_id = s.flight_id
+   where upper(f.flight_number) = upper(p_flight_number) and s.status in ('booked','blocked');
   select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
     select s.seat_number, s.row_number, s.column_letter, s.base_price_delta from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'window' and s.status = 'available'
@@ -263,7 +266,7 @@ begin
     order by s.row_number, s.column_letter limit 10) z;
   select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
-  perform _emit(p_ref, 'seats_shown', jsonb_build_object('flight_number', p_flight_number, 'seats', arr));
+  perform _emit(p_ref, 'seats_shown', jsonb_build_object('flight_number', p_flight_number, 'booked_seats', booked));
   return json_build_object(
     'flight_number', p_flight_number, 'available_count', avail,
     'available_window_seats', coalesce(win,''), 'available_aisle_seats', coalesce(ais,''),

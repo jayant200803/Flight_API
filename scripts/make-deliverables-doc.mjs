@@ -94,8 +94,8 @@ children.push(code(`booking_loaded / flight_changed / seat_changed / bags_change
 flights_shown  -> { count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta,
                     flights:[ {flight_number,departure_time,arrival_time,base_fare,price_delta,available_seats,stops} ] }
 
-seats_shown    -> { flight_number, seats:[ ...ALL 180 seats... {seat_number,row_number,
-                    column_letter,seat_type,status,base_price_delta} ] }
+seats_shown    -> { flight_number, booked_seats:[ "23C", ... ] }   (only booked/blocked
+                    seats; the screen already knows the layout + prices)
 
 quote_ready    -> { flight_change:-60, seat_change:0, baggage_change:45, total_change:-15, currency:"EUR" }
 

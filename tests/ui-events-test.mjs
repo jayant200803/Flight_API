@@ -45,7 +45,9 @@ const { data: ev } = await admin.from('ui_events').select('*').order('id');
 const seat = ev.find(e => e.event_type === 'seat_changed');
 ok(seat && seat.payload.seat_number === '6A', 'seat_changed payload carries the full booking (seat 6A)');
 const seats = ev.find(e => e.event_type === 'seats_shown');
-ok(seats && Array.isArray(seats.payload.seats) && seats.payload.seats.length === 180, 'seats_shown payload carries the full 180-seat list');
+ok(seats && Array.isArray(seats.payload.booked_seats), 'seats_shown payload carries booked_seats array');
+ok(seats && seats.payload.seats === undefined, 'seats_shown payload no longer includes the full seats list');
+ok(seats && seats.payload.booked_seats.includes('23C'), 'booked_seats includes 23C (booked on NS1156)');
 const conf = ev.find(e => e.event_type === 'booking_confirmed');
 ok(conf && conf.payload.boarding_pass_ref, 'booking_confirmed payload has boarding_pass_ref');
 
