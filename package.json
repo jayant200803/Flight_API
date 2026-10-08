@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node tests/smoke-test.mjs",
     "test:full": "node tests/full-test.mjs",
-    "test:webhook": "node tests/webhook-test.mjs"
+    "test:webhook": "node tests/webhook-test.mjs",
+    "test:ui-events": "node tests/ui-events-test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -1,0 +1,165 @@
+{
+  "info": {
+    "name": "Flight Booking Voice Agent API",
+    "description": "All RPCs for the flight booking demo. Every call also logs one ui_events row (live UI feed). Run in order: reset_demo -> get_booking -> search_flights -> change_flight -> get_seat_map -> change_seat -> change_baggage -> quote_booking -> confirm_booking. Plus an error case and a search without a ref.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1" },
+    { "key": "key", "value": "sb_publishable_SNafVoNYzjtRzby3l2R2oA_0KEXqBWW" },
+    { "key": "ref", "value": "ABC123" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "apikey", "type": "string" },
+      { "key": "value", "value": "{{key}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. reset_demo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/reset_demo",
+        "body": { "mode": "raw", "raw": "{}" }
+      }
+    },
+    {
+      "name": "1. get_booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/get_booking",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\" }" }
+      }
+    },
+    {
+      "name": "2. search_flights",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/search_flights",
+        "body": { "mode": "raw", "raw": "{ \"p_origin\": \"SIN\", \"p_destination\": \"NRT\", \"p_date\": \"2026-10-08\", \"p_ref\": \"{{ref}}\" }" }
+      }
+    },
+    {
+      "name": "3. change_flight",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/change_flight",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\", \"p_new_flight_number\": \"NS1156\" }" }
+      }
+    },
+    {
+      "name": "4. get_seat_map",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/get_seat_map",
+        "body": { "mode": "raw", "raw": "{ \"p_flight_number\": \"NS1156\", \"p_summary_only\": true, \"p_ref\": \"{{ref}}\" }" }
+      }
+    },
+    {
+      "name": "5. change_seat",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/change_seat",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\", \"p_new_seat_number\": \"6A\" }" }
+      }
+    },
+    {
+      "name": "6. change_baggage",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/change_baggage",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\", \"p_baggage_count\": 2 }" }
+      }
+    },
+    {
+      "name": "7. quote_booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/quote_booking",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\" }" }
+      }
+    },
+    {
+      "name": "8. confirm_booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/confirm_booking",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"{{ref}}\" }" }
+      }
+    },
+    {
+      "name": "9. ERROR — get_booking (wrong ref)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/get_booking",
+        "body": { "mode": "raw", "raw": "{ \"p_ref\": \"ZZZZZZ\" }" }
+      }
+    },
+    {
+      "name": "10. search_flights (no ref — anonymous)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{key}}" },
+          { "key": "Authorization", "value": "Bearer {{key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base}}/rpc/search_flights",
+        "body": { "mode": "raw", "raw": "{ \"p_origin\": \"SIN\", \"p_destination\": \"NRT\", \"p_date\": \"2026-10-08\" }" }
+      }
+    }
+  ]
+}
