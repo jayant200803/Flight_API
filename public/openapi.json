@@ -126,7 +126,7 @@
         },
         "responses": {
           "200": {
-            "description": "Object: { count, cheapest_flight_number, cheapest_price_delta, flights[] }"
+            "description": "Object: { count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta, flights[] }. p_ref optional: without it deltas are null and cheapest is by lowest base_fare."
           }
         },
         "operationId": "search_flights"
