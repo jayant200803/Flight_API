@@ -23,7 +23,13 @@ Deno.serve(async (req) => {
   const event_type  = row.event_type ?? "event";
   const payload     = row.payload ?? {};
 
-  // Broadcast via the Realtime REST endpoint (no server-side subscribe needed).
+  const msg = {
+    event: event_type,                 // broadcast event name
+    payload: { booking_ref, event_type, payload, created_at: row.created_at ?? new Date().toISOString() },
+  };
+
+  // Broadcast to BOTH: the per-booking channel AND a fixed "demo" channel
+  // (the UI can listen on "demo" even before it knows the booking ref).
   const resp = await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
     method: "POST",
     headers: {
@@ -32,16 +38,15 @@ Deno.serve(async (req) => {
       "Authorization": `Bearer ${SERVICE_KEY}`,
     },
     body: JSON.stringify({
-      messages: [{
-        topic: `booking:${booking_ref}`,   // channel name the UI subscribes to
-        event: event_type,                 // broadcast event name
-        payload: { booking_ref, event_type, payload, created_at: row.created_at ?? new Date().toISOString() },
-      }],
+      messages: [
+        { topic: `booking:${booking_ref}`, ...msg },
+        { topic: "demo", ...msg },
+      ],
     }),
   });
 
   return new Response(
-    JSON.stringify({ ok: resp.ok, channel: `booking:${booking_ref}`, event: event_type }),
+    JSON.stringify({ ok: resp.ok, channels: [`booking:${booking_ref}`, "demo"], event: event_type }),
     { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } },
   );
 });
