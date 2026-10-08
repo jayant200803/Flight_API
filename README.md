@@ -12,7 +12,7 @@ matches the demo scenes.
 supabase/
   migrations/0001_schema.sql     tables + enums (flights, seats, customers, bookings, pricing)
   migrations/0002_functions.sql  the 7 RPC endpoints + helpers
-  seed.sql                       demo data (booking ABC123, SIN->NRT flights, seat maps)
+  seed.sql                       demo data (bookings ABC123..ABC134, SIN->NRT flights, seat maps)
 tests/
   api.http                       click-to-run requests (VS Code REST Client extension)
   smoke-test.mjs                 runs the full 6-scene journey and checks the numbers

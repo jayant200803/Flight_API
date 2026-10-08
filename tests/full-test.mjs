@@ -196,14 +196,21 @@ const q2 = await call('quote_booking', { p_ref: REF });
 ok(n(q2.total_change) === 0, 'quote baseline reset after confirm (total_change = 0)');
 
 // ---------------------------------------------------------------
-section('reset_demo RPC — restores the starting state');
+section('Multiple demo bookings — ABC124 is a fresh identical booking');
+const b124 = await call('get_booking', { p_ref: 'ABC124' });
+ok(b124.flight.flight_number === 'NS1142', 'ABC124 starts on NS1142');
+ok(b124.seat_number === '23D', 'ABC124 has its own seat 23D');
+ok(n(b124.pricing.total_price) === 250 && b124.status === 'confirmed', 'ABC124 is €250, confirmed (fresh)');
+
+section('reset_demo RPC — restores ALL demo bookings to the starting state');
 const rd = await call('reset_demo', {});
-ok(rd.flight.flight_number === 'NS1142', 'reset_demo -> back on NS1142');
-ok(rd.seat_number === '23C', 'reset_demo -> seat 23C');
-ok(rd.baggage_count === 1, 'reset_demo -> 1 bag');
-ok(n(rd.pricing.total_price) === 250, 'reset_demo -> total 250');
-ok(rd.status === 'confirmed', 'reset_demo -> status confirmed');
-ok(rd.boarding_pass_ref === null, 'reset_demo -> boarding pass cleared');
+ok(rd.reset_count >= 12, `reset_demo reset ${rd.reset_count} bookings`);
+ok(Array.isArray(rd.references) && rd.references.includes('ABC123') && rd.references.includes('ABC134'), 'references ABC123..ABC134 present');
+ok(rd.booking.flight.flight_number === 'NS1142', 'reset_demo -> ABC123 back on NS1142');
+ok(rd.booking.seat_number === '23C', 'reset_demo -> ABC123 seat 23C');
+ok(n(rd.booking.pricing.total_price) === 250, 'reset_demo -> ABC123 total 250');
+ok(rd.booking.status === 'confirmed', 'reset_demo -> ABC123 confirmed');
+ok(rd.booking.boarding_pass_ref === null, 'reset_demo -> ABC123 boarding pass cleared');
 
 // ---------------------------------------------------------------
 console.log('\n=====================================================');

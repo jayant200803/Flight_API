@@ -49,7 +49,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 | `change_baggage` | Set number of bags (1 incl., €45/extra) | `p_ref`, `p_baggage_count` |
 | `quote_booking` | Itemised price change vs last confirmed | `p_ref` |
 | `confirm_booking` | Lock booking, issue boarding pass | `p_ref` |
-| `reset_demo` | Reset ABC123 to the start state (demo helper) | *(none)* |
+| `reset_demo` | Reset ALL demo bookings (ABC123..ABC134) to the start state | *(none)* |
 
 ### Response shapes to note (voice-agent friendly)
 - **`search_flights`** returns an **object**: `{ count, cheapest_flight_number, cheapest_price_delta, flights: [...] }`. The list is under `flights`.
@@ -64,7 +64,7 @@ Possible values: `booking_not_found`, `flight_not_found`, `already_on_flight` (c
 
 ## 4. Demo data
 
-- Booking reference: **ABC123** (Shivam Sharma)
+- Booking references: **ABC123 … ABC134** — 12 identical bookings (Shivam Sharma). **Use a fresh reference for each demo/tester** so runs don't collide. Each starts the same (NS1142, €250, 1 bag, confirmed) with its own aisle seat (ABC123 = 23C, ABC124 = 23D, …).
 - Route: **SIN → NRT**, date **2026-10-08** (Thu)
 - Starts on **NS1142**, seat **23C**, **€250**
 - Flights: `NS1156` cheapest (−€60), `NS1150` (−€35), `NS1180` (−€20, low availability), `NS1120` sold out, `NS1134` at 09:40

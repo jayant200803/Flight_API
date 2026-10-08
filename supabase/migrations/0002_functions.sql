@@ -284,46 +284,56 @@ begin
   );
 end $$;
 
--- 8) Demo helper: reset booking ABC123 to the starting state
---    (NS1142, seat 23C, 1 bag, EUR 250, confirmed). Re-runnable, safe to call anytime.
+-- 8) Demo helper: reset ALL demo bookings (ABC123..ABC134) to the starting state
+--    (each on NS1142, its own aisle seat, 1 bag, EUR 250, confirmed). Re-runnable.
 create or replace function reset_demo()
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_bid bigint; v_fid bigint;
+declare v_fid bigint; r record; idx int; v_seat text;
+        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E'];
 begin
-  select booking_id into v_bid from bookings where booking_reference = 'ABC123';
-  if v_bid is null then return jsonb_build_object('error','demo_booking_missing'); end if;
   select flight_id into v_fid from flights where flight_number = 'NS1142';
 
-  -- release every seat this booking currently holds (on any flight)
-  update seats set status='available', booking_id=null where booking_id = v_bid;
-  -- re-hold 23C on NS1142
-  update seats set status='booked', booking_id=v_bid
-   where flight_id = v_fid and seat_number = '23C';
+  -- release every seat currently held by any demo booking
+  update seats set status='available', booking_id=null
+   where booking_id in (select booking_id from bookings where booking_reference like 'ABC%');
 
-  -- restore the booking row to the seeded starting values
-  update bookings set
-    flight_id           = v_fid,
-    seat_number         = '23C',
-    baggage_count       = 1,
-    booking_status      = 'confirmed',
-    base_price          = 250.00,
-    seat_surcharge      = 0.00,
-    baggage_charge      = 0.00,
-    total_price         = 250.00,
-    orig_base_price     = 250.00,
-    orig_seat_surcharge = 0.00,
-    orig_baggage_charge = 0.00,
-    boarding_pass_ref   = null,
-    crm_synced_at       = null,
-    updated_at          = now()
-  where booking_id = v_bid;
+  for r in select booking_id, booking_reference from bookings
+           where booking_reference like 'ABC%' order by booking_reference loop
+    idx := (substring(r.booking_reference from 4))::int - 122;   -- ABC123 -> 1
+    if idx < 1 or idx > array_length(seats,1) then continue; end if;
+    v_seat := seats[idx];
+    update bookings set
+      flight_id           = v_fid,
+      seat_number         = v_seat,
+      baggage_count       = 1,
+      booking_status      = 'confirmed',
+      base_price          = 250.00,
+      seat_surcharge      = 0.00,
+      baggage_charge      = 0.00,
+      total_price         = 250.00,
+      orig_base_price     = 250.00,
+      orig_seat_surcharge = 0.00,
+      orig_baggage_charge = 0.00,
+      boarding_pass_ref   = null,
+      crm_synced_at       = null,
+      updated_at          = now()
+    where booking_id = r.booking_id;
+    update seats set status='booked', booking_id=r.booking_id
+     where flight_id = v_fid and seat_number = v_seat;
+  end loop;
 
   -- resync occupancy counters
   update flights f set occupied_seats = (
     select count(*) from seats s where s.flight_id = f.flight_id and s.status='booked')
    where f.flight_id > 0;
 
-  return _booking_json('ABC123');
+  return jsonb_build_object(
+    'reset_count', (select count(*) from bookings where booking_reference like 'ABC%'),
+    'references',  (select jsonb_agg(booking_reference order by booking_reference)
+                      from bookings where booking_reference like 'ABC%'),
+    'booking',     _booking_json('ABC123'),
+    'message',     'All demo bookings reset to the starting state.'
+  );
 end $$;
 
 -- ---------- Grants: let the anon/auth API roles call the functions ----------

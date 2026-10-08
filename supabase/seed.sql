@@ -47,26 +47,34 @@ begin
   end loop;
 end $$;
 
--- Guarantee the demo seats: 23C booked on NS1142 (current), 6A & 6F free on NS1156
-update seats set status='booked'
- where flight_id=(select flight_id from flights where flight_number='NS1142') and seat_number='23C';
+-- Guarantee free demo target seats: 6A & 6F free on NS1156
 update seats set status='available', booking_id=null
  where flight_id=(select flight_id from flights where flight_number='NS1156') and seat_number in ('6A','6F');
 
--- ---------- The demo booking (on NS1142, seat 23C, 1 bag, EUR 250) ----------
-insert into bookings (
-  customer_id, flight_id, booking_reference, primary_passenger_name, passenger_count,
-  seat_number, baggage_count, booking_status, base_price, seat_surcharge, baggage_charge,
-  total_price, orig_base_price, orig_seat_surcharge, orig_baggage_charge)
-select c.customer_id, f.flight_id, 'ABC123', c.customer_name, 1,
-       '23C', 1, 'confirmed', 250.00, 0.00, 0.00,
-       250.00, 250.00, 0.00, 0.00
-from customers c cross join flights f
-where c.account_number='AC7620' and f.flight_number='NS1142';
-
--- link seat 23C to that booking
-update seats set booking_id = (select booking_id from bookings where booking_reference='ABC123')
- where flight_id=(select flight_id from flights where flight_number='NS1142') and seat_number='23C';
+-- ---------- 12 identical demo bookings: ABC123 .. ABC134 ----------
+-- Each starts on NS1142, 1 bag, EUR 250, confirmed, with its own aisle seat
+-- (distinct seats so there is no clash on the shared flight). ABC123 = seat 23C.
+do $$
+declare v_cid bigint; v_fid bigint; i int; v_ref text; v_seat text; v_bid bigint;
+        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E'];
+begin
+  select customer_id into v_cid from customers where account_number='AC7620';
+  select flight_id   into v_fid from flights   where flight_number='NS1142';
+  for i in 1 .. array_length(seats,1) loop
+    v_ref  := 'ABC' || (122 + i)::text;   -- i=1 -> ABC123
+    v_seat := seats[i];
+    insert into bookings (
+      customer_id, flight_id, booking_reference, primary_passenger_name, passenger_count,
+      seat_number, baggage_count, booking_status, base_price, seat_surcharge, baggage_charge,
+      total_price, orig_base_price, orig_seat_surcharge, orig_baggage_charge)
+    values (v_cid, v_fid, v_ref, 'Shivam Sharma', 1,
+      v_seat, 1, 'confirmed', 250.00, 0.00, 0.00,
+      250.00, 250.00, 0.00, 0.00)
+    returning booking_id into v_bid;
+    update seats set status='booked', booking_id=v_bid
+      where flight_id=v_fid and seat_number=v_seat;
+  end loop;
+end $$;
 
 -- ---------- Pricing reference rows ----------
 insert into pricing (flight_id, seat_type, price_delta, change_fee_override)
