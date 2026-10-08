@@ -32,10 +32,6 @@ begin
   end loop;
 end $$;
 
--- ---------- Customer ----------
-insert into customers (account_number, customer_name, date_of_birth, email, phone, crm_id) values
-('AC7620','Shivam Sharma','1992-07-18','shivam@example.com','+65 8123 4567','CRM-AC7620');
-
 -- ---------- Seats for every flight (rows 1-30, cols A-F) ----------
 -- Classification: A/F = window, C/D = aisle, B/E = middle;
 -- rows 12-13 = emergency_row (+25); rows 1-5 = front rows (+15); others = 0.
@@ -80,19 +76,28 @@ update seats set status='available', booking_id=null
 -- Each starts on NS1142, 1 bag, EUR 250, confirmed, with its own aisle seat
 -- (distinct seats so there is no clash on the shared flight). ABC123 = seat 23C.
 do $$
-declare v_cid bigint; v_fid bigint; i int; v_ref text; v_seat text; v_bid bigint;
+declare v_cid bigint; v_fid bigint; i int; v_ref text; v_seat text; v_bid bigint; v_name text; v_first text;
         seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E'];
+        names text[] := array['Aarav Mehta','Priya Nair','Liam O''Brien','Sofia Rossi','Kenji Tanaka',
+                               'Amara Okafor','Lucas Muller','Ingrid Larsen','Diego Fernandez','Mei Lin',
+                               'Omar Haddad','Chloe Dubois'];
 begin
-  select customer_id into v_cid from customers where account_number='AC7620';
-  select flight_id   into v_fid from flights   where flight_number='NS1142';
+  select flight_id into v_fid from flights where flight_number='NS1142';
   for i in 1 .. array_length(seats,1) loop
-    v_ref  := 'ABC' || (122 + i)::text;   -- i=1 -> ABC123
-    v_seat := seats[i];
+    v_ref   := 'ABC' || (122 + i)::text;   -- i=1 -> ABC123
+    v_seat  := seats[i];
+    v_name  := names[i];
+    v_first := lower(split_part(v_name,' ',1));
+    -- each booking gets its own customer/passenger
+    insert into customers (account_number, customer_name, date_of_birth, email, phone, crm_id)
+    values ('AC70'||lpad(i::text,2,'0'), v_name, date '1985-01-01' + (i*137),
+            v_first||i||'@example.com', '+65 81'||lpad(i::text,2,'0')||' 4567', 'CRM-AC70'||lpad(i::text,2,'0'))
+    returning customer_id into v_cid;
     insert into bookings (
       customer_id, flight_id, booking_reference, primary_passenger_name, passenger_count,
       seat_number, baggage_count, booking_status, base_price, seat_surcharge, baggage_charge,
       total_price, orig_base_price, orig_seat_surcharge, orig_baggage_charge)
-    values (v_cid, v_fid, v_ref, 'Shivam Sharma', 1,
+    values (v_cid, v_fid, v_ref, v_name, 1,
       v_seat, 1, 'confirmed', 250.00, 0.00, 0.00,
       250.00, 250.00, 0.00, 0.00)
     returning booking_id into v_bid;

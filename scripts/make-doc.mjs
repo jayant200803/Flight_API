@@ -240,7 +240,7 @@ children.push(body('The key above is the publishable key — safe for the agent/
 
 // Demo data
 children.push(h1('Demo data'));
-children.push(P([T('Booking references: ', {}), T('ABC123 … ABC134', { font: 'Consolas' }), T('  (Shivam Sharma) — 12 identical bookings; use a fresh one per demo/tester')], space(40)));
+children.push(P([T('Booking references: ', {}), T('ABC123 … ABC134', { font: 'Consolas' }), T('  — 12 bookings, each a different passenger (ABC123 = Aarav Mehta); use a fresh one per demo/tester')], space(40)));
 children.push(P([T('Route: ', {}), T('SIN → NRT', { bold: true }), T('   Date: '), T('2026-10-08', { font: 'Consolas' }), T('  (Thu)')], space(40)));
 children.push(body('Starts on NS1142, seat 23C, €250. Flights: NS1156 cheapest (−60), NS1150 (−35), NS1180 (−20, low availability), NS1120 sold out, NS1134 at 09:40. Seat surcharge: window €0, front rows €15, emergency rows €25.'));
 children.push(body('Note: errors come back with HTTP 200 and a body like { "error": "booking_not_found" } — always check for an “error” key.'));

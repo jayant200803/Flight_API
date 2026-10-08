@@ -46,7 +46,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
   Values: `booking_not_found`, `flight_not_found`, `already_on_flight`, `seat_not_found`, `seat_unavailable`, `min_one_bag`, `no_seat_selected`.
 
 ### Demo data
-- Booking references: **ABC123 .. ABC134** (12 identical bookings, Shivam Sharma) — use a fresh one per demo/tester. Each starts on NS1142, 1 bag, EUR 250, confirmed, own aisle seat (ABC123 = 23C).
+- Booking references: **ABC123 .. ABC134** (12 bookings, each a different passenger — ABC123 = Aarav Mehta) — use a fresh one per demo/tester. Each starts on NS1142, 1 bag, EUR 250, confirmed, own aisle seat (ABC123 = 23C).
 - PRD route: **SIN -> NRT on 2026-10-08** (Thu). Search with `p_origin='SIN', p_destination='NRT', p_date='2026-10-08'`.
 - Flights: NS1156 is cheapest (-60), NS1150 is -35, NS1180 is -20 (low availability), NS1120 is sold out, NS1134 departs 09:40.
 - Seat surcharges: window €0, front rows 1–5 €15, emergency rows 12–13 €25.

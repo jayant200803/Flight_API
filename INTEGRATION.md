@@ -70,7 +70,7 @@ Possible values: `booking_not_found`, `flight_not_found`, `already_on_flight` (c
 
 ## 4. Demo data
 
-- Booking references: **ABC123 … ABC134** — 12 identical bookings (Shivam Sharma). **Use a fresh reference for each demo/tester** so runs don't collide. Each starts the same (NS1142, €250, 1 bag, confirmed) with its own aisle seat (ABC123 = 23C, ABC124 = 23D, …).
+- Booking references: **ABC123 … ABC134** — 12 bookings, **each a different passenger** (ABC123 = Aarav Mehta, ABC124 = Priya Nair, …). **Use a fresh reference for each demo/tester** so runs don't collide. All start the same (NS1142, €250, 1 bag, confirmed) with their own aisle seat (ABC123 = 23C, ABC124 = 23D, …).
 - Route: **SIN → NRT**. The demo booking is on **2026-10-08** (Thu); flights are seeded for **2026-10-08 → 2026-10-21**, so the agent can search any date in that range (8 Oct is the canonical demo day; other days have normal availability and their own flight numbers).
 - Starts on **NS1142**, seat **23C**, **€250**
 - Flights: `NS1156` cheapest (−€60), `NS1150` (−€35), `NS1180` (−€20, low availability), `NS1120` sold out, `NS1134` at 09:40
@@ -93,7 +93,7 @@ curl -X POST "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1/rpc/get_booking" 
 {
   "booking_reference": "ABC123",
   "status": "confirmed",
-  "passenger_name": "Shivam Sharma",
+  "passenger_name": "Aarav Mehta",
   "flight": { "flight_number": "NS1142", "origin": "SIN", "destination": "NRT",
               "departure_time": "2026-10-08T14:05:00", "arrival_time": "2026-10-08T15:50:00",
               "aircraft": "Boeing 787-9" },

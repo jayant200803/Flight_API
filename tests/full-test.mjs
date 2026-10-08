@@ -73,7 +73,7 @@ section('Scene 1 — retrieve current booking (NS1142 / 23C / EUR 250)');
 let b = await call('get_booking', { p_ref: REF });
 ok(b.flight.flight_number === 'NS1142', 'flight is NS1142');
 ok(b.flight.origin === 'SIN' && b.flight.destination === 'NRT', 'route is SIN -> NRT');
-ok(b.passenger_name === 'Shivam Sharma', 'passenger is Shivam Sharma');
+ok(b.passenger_name === 'Aarav Mehta', 'ABC123 passenger is Aarav Mehta');
 ok(b.seat_number === '23C', 'seat is 23C');
 ok(b.seat_type === 'aisle', 'seat_type is aisle (col C)');
 ok(n(b.pricing.base_price) === 250, 'base_price is 250');
@@ -261,6 +261,7 @@ const b124 = await call('get_booking', { p_ref: 'ABC124' });
 ok(b124.flight.flight_number === 'NS1142', 'ABC124 starts on NS1142');
 ok(b124.seat_number === '23D', 'ABC124 has its own seat 23D');
 ok(n(b124.pricing.total_price) === 250 && b124.status === 'confirmed', 'ABC124 is €250, confirmed (fresh)');
+ok(b124.passenger_name === 'Priya Nair', 'ABC124 has its own passenger name (Priya Nair, not Aarav)');
 
 section('reset_demo RPC — restores ALL demo bookings to the starting state');
 const rd = await call('reset_demo', {});
