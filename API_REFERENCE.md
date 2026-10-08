@@ -35,6 +35,6 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 - Errors return `{ "error": "...", ... }` with HTTP 200, so always check for an `error` key.
 
 ### Demo data
-- Booking reference: **NS7K2Q** (Ingrid Solberg), starts on NS1142, seat 23C, EUR 250.
-- Route matches the demo video: **OSL -> LHR on 2026-10-01** (Thu). Search with `p_origin='OSL', p_destination='LHR', p_date='2026-10-01'`.
+- Booking reference: **ABC123** (Shivam Sharma), starts on NS1142, seat 23C, EUR 250.
+- PRD route: **SIN -> NRT on 2026-10-08** (Thu). Search with `p_origin='SIN', p_destination='NRT', p_date='2026-10-08'`.
 - Flights: NS1156 is cheapest (-60), NS1150 is -35, NS1180 is -20 (low availability), NS1120 is sold out, NS1134 departs 09:40.

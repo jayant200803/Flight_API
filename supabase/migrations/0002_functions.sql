@@ -30,7 +30,10 @@ returns jsonb language sql stable as $$
        'aircraft',      f.aircraft_type
     ),
     'seat_number',    b.seat_number,
+    'seat_type',      (select s.seat_type from seats s
+                         where s.flight_id = b.flight_id and s.seat_number = b.seat_number),
     'baggage_count',  b.baggage_count,
+    'baggage_weight_kg', 23,
     'pricing', jsonb_build_object(
        'base_price',     b.base_price,
        'seat_surcharge', b.seat_surcharge,
@@ -204,6 +207,10 @@ declare b bookings%rowtype; v_pass text;
 begin
   select * into b from bookings where booking_reference = p_ref;
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
+  if b.seat_number is null then
+    return jsonb_build_object('error','no_seat_selected',
+      'message','Please select a seat before confirming the booking.');
+  end if;
 
   v_pass := 'BP-' || b.booking_reference || '-' ||
             (select flight_number from flights where flight_id = b.flight_id);

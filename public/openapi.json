@@ -3,7 +3,7 @@
   "info": {
     "title": "Flight Booking Voice Agent — API",
     "version": "1.0.0",
-    "description": "Backend for the Nordic Sky (OneInbox) flight booking voice-agent demo.\n\nAll logic runs as PostgreSQL functions exposed through Supabase's auto REST layer — **there is no separate server**. Each endpoint is a `POST` to `/rest/v1/rpc/{function}` with a JSON body of arguments.\n\n**Auth is already wired** on this page (publishable key, safe for the browser — tables are protected by Row Level Security). Just open an endpoint, click **Try it out**, then **Execute**.\n\n**Demo data:** booking `NS7K2Q` (Ingrid Solberg) on route **OSL → LHR, 2026-10-01**. Flight `NS1156` is cheapest (−€60), `NS1120` is sold out, `NS1180` has low availability.\n\n**Note:** errors come back with HTTP 200 and an `{ \"error\": \"...\" }` body — always check for an `error` key."
+    "description": "Backend for the (OneInbox) flight booking voice-agent demo.\n\nAll logic runs as PostgreSQL functions exposed through Supabase's auto REST layer — **there is no separate server**. Each endpoint is a `POST` to `/rest/v1/rpc/{function}` with a JSON body of arguments.\n\n**Auth is already wired** on this page (publishable key, safe for the browser — tables are protected by Row Level Security). Just open an endpoint, click **Try it out**, then **Execute**.\n\n**Demo data:** booking `ABC123` (Shivam Sharma) on route **SIN → NRT, 2026-10-08**. Flight `NS1156` is cheapest (−€60), `NS1120` is sold out, `NS1180` has low availability.\n\n**Note:** errors come back with HTTP 200 and an `{ \"error\": \"...\" }` body — always check for an `error` key."
   },
   "servers": [
     {
@@ -64,7 +64,7 @@
                   "p_ref": {
                     "type": "string",
                     "description": "Booking reference",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   }
                 }
               }
@@ -101,23 +101,23 @@
                   "p_origin": {
                     "type": "string",
                     "description": "Origin airport (IATA)",
-                    "example": "OSL"
+                    "example": "SIN"
                   },
                   "p_destination": {
                     "type": "string",
                     "description": "Destination airport (IATA)",
-                    "example": "LHR"
+                    "example": "NRT"
                   },
                   "p_date": {
                     "type": "string",
                     "format": "date",
                     "description": "Departure date",
-                    "example": "2026-10-01"
+                    "example": "2026-10-08"
                   },
                   "p_ref": {
                     "type": "string",
                     "description": "Booking ref (for price delta baseline)",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   }
                 }
               }
@@ -152,7 +152,7 @@
                 "properties": {
                   "p_ref": {
                     "type": "string",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   },
                   "p_new_flight_number": {
                     "type": "string",
@@ -226,7 +226,7 @@
                 "properties": {
                   "p_ref": {
                     "type": "string",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   },
                   "p_new_seat_number": {
                     "type": "string",
@@ -266,7 +266,7 @@
                 "properties": {
                   "p_ref": {
                     "type": "string",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   },
                   "p_baggage_count": {
                     "type": "integer",
@@ -306,7 +306,7 @@
                 "properties": {
                   "p_ref": {
                     "type": "string",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   }
                 }
               }
@@ -340,7 +340,7 @@
                 "properties": {
                   "p_ref": {
                     "type": "string",
-                    "example": "NS7K2Q"
+                    "example": "ABC123"
                   }
                 }
               }

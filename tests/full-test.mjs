@@ -8,7 +8,7 @@
 //   (booking_not_found, flight_not_found, seat_not_found, seat_unavailable,
 //    min_one_bag, empty search).
 //
-// It RESETS booking NS7K2Q to the starting state first (via service role),
+// It RESETS booking ABC123 to the starting state first (via service role),
 // so it is fully repeatable — run it as many times as you like.
 //
 // Usage:  node tests/full-test.mjs
@@ -25,7 +25,7 @@ if (!svc) { console.error('Set SUPABASE_SERVICE_ROLE_KEY in .env (needed to rese
 const sb = createClient(url, anon);        // the agent/frontend role
 const admin = createClient(url, svc);      // service role, for resetting state
 
-const REF = 'NS7K2Q';
+const REF = 'ABC123';
 let pass = 0, fail = 0;
 const n = (v) => Number(v);
 
@@ -71,15 +71,22 @@ ok(e.error === 'booking_not_found', 'unknown ref returns booking_not_found');
 section('Scene 1 — retrieve current booking (NS1142 / 23C / EUR 250)');
 let b = await call('get_booking', { p_ref: REF });
 ok(b.flight.flight_number === 'NS1142', 'flight is NS1142');
+ok(b.flight.origin === 'SIN' && b.flight.destination === 'NRT', 'route is SIN -> NRT');
+ok(b.passenger_name === 'Shivam Sharma', 'passenger is Shivam Sharma');
 ok(b.seat_number === '23C', 'seat is 23C');
+ok(b.seat_type === 'aisle', 'seat_type is aisle (col C)');
+ok(n(b.pricing.base_price) === 250, 'base_price is 250');
+ok(n(b.pricing.seat_surcharge) === 0, 'seat_surcharge is 0');
+ok(n(b.pricing.baggage_charge) === 0, 'baggage_charge is 0');
 ok(n(b.pricing.total_price) === 250, 'total price is 250');
 ok(b.pricing.currency === 'EUR', 'currency is EUR');
 ok(b.baggage_count === 1, '1 bag included');
+ok(b.baggage_weight_kg === 23, 'baggage weight is 23 kg per bag');
 ok(b.status === 'confirmed', 'status confirmed');
 
 // ---------------------------------------------------------------
 section('Scene 2 — flight search + price deltas + availability scenarios');
-const flights = await call('search_flights', { p_origin: 'OSL', p_destination: 'LHR', p_date: '2026-10-01', p_ref: REF });
+const flights = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08', p_ref: REF });
 ok(Array.isArray(flights) && flights.length === 6, 'returns 6 flights');
 const sorted = flights.every((f, i) => i === 0 || f.departure_time >= flights[i-1].departure_time);
 ok(sorted, 'flights sorted by departure time');
@@ -95,7 +102,7 @@ ok(n(by['NS1156'].available_seats) > 0, 'NS1156 has seats available');
 section('Scene 2b — search edge cases');
 const none = await call('search_flights', { p_origin: 'XXX', p_destination: 'YYY', p_date: '2026-10-08', p_ref: REF });
 ok(Array.isArray(none) && none.length === 0, 'unknown route returns empty list');
-const lower = await call('search_flights', { p_origin: 'osl', p_destination: 'lhr', p_date: '2026-10-01', p_ref: REF });
+const lower = await call('search_flights', { p_origin: 'sin', p_destination: 'nrt', p_date: '2026-10-08', p_ref: REF });
 ok(lower.length === 6, 'origin/destination are case-insensitive');
 
 // ---------------------------------------------------------------
@@ -115,6 +122,9 @@ const { data: old23c } = await admin.from('seats').select('status,booking_id')
   .eq('flight_id', (await admin.from('flights').select('flight_id').eq('flight_number','NS1142').single()).data.flight_id)
   .single();
 ok(old23c.status === 'available' && old23c.booking_id === null, 'old seat 23C on NS1142 released');
+
+section('Guard — confirm with NO seat selected (right after flight change)');
+ok((await call('confirm_booking', { p_ref: REF })).error === 'no_seat_selected', 'confirm without a seat -> no_seat_selected');
 
 // ---------------------------------------------------------------
 section('Scene 4 — seat map + seat selection');

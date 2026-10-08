@@ -52,17 +52,17 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
 ### Error handling
 Errors return **HTTP 200** with an `{ "error": "..." }` body. Always check for an `error` key.
-Possible values: `booking_not_found`, `flight_not_found`, `seat_not_found`, `seat_unavailable`, `min_one_bag`.
+Possible values: `booking_not_found`, `flight_not_found`, `seat_not_found`, `seat_unavailable`, `min_one_bag`, `no_seat_selected` (confirm attempted with no seat).
 
 ---
 
 ## 4. Demo data
 
-- Booking reference: **NS7K2Q** (Ingrid Solberg)
-- Route: **OSL → LHR**, date **2026-10-01** (Thu)
+- Booking reference: **ABC123** (Shivam Sharma)
+- Route: **SIN → NRT**, date **2026-10-08** (Thu)
 - Starts on **NS1142**, seat **23C**, **€250**
 - Flights: `NS1156` cheapest (−€60), `NS1150` (−€35), `NS1180` (−€20, low availability), `NS1120` sold out, `NS1134` at 09:40
-- Seat surcharges: window €0 · front rows (1–2) €15 · emergency rows (12–13) €25
+- Seat surcharges: window €0 · front rows (1–5) €15 · emergency rows (12–13) €25
 - Re-run `supabase/seed.sql` to reset to this starting state.
 
 ---
@@ -75,18 +75,20 @@ curl -X POST "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1/rpc/get_booking" 
   -H "apikey: sb_publishable_SNafVoNYzjtRzby3l2R2oA_0KEXqBWW" \
   -H "Authorization: Bearer sb_publishable_SNafVoNYzjtRzby3l2R2oA_0KEXqBWW" \
   -H "Content-Type: application/json" \
-  -d '{"p_ref":"NS7K2Q"}'
+  -d '{"p_ref":"ABC123"}'
 ```
 ```json
 {
-  "booking_reference": "NS7K2Q",
+  "booking_reference": "ABC123",
   "status": "confirmed",
-  "passenger_name": "Ingrid Solberg",
-  "flight": { "flight_number": "NS1142", "origin": "OSL", "destination": "LHR",
-              "departure_time": "2026-10-01T14:05:00", "arrival_time": "2026-10-01T15:50:00",
+  "passenger_name": "Shivam Sharma",
+  "flight": { "flight_number": "NS1142", "origin": "SIN", "destination": "NRT",
+              "departure_time": "2026-10-08T14:05:00", "arrival_time": "2026-10-08T15:50:00",
               "aircraft": "Boeing 787-9" },
   "seat_number": "23C",
+  "seat_type": "aisle",
   "baggage_count": 1,
+  "baggage_weight_kg": 23,
   "pricing": { "base_price": 250.00, "seat_surcharge": 0.00, "baggage_charge": 0.00,
                "total_price": 250.00, "currency": "EUR" },
   "boarding_pass_ref": null
@@ -96,12 +98,12 @@ curl -X POST "https://ogxttimsdjgahwpzzjyv.supabase.co/rest/v1/rpc/get_booking" 
 ### search_flights
 ```bash
 curl -X POST ".../rpc/search_flights" -H ...headers... \
-  -d '{"p_origin":"OSL","p_destination":"LHR","p_date":"2026-10-01","p_ref":"NS7K2Q"}'
+  -d '{"p_origin":"SIN","p_destination":"NRT","p_date":"2026-10-08","p_ref":"ABC123"}'
 ```
 ```json
 [
-  { "flight_number": "NS1156", "departure_time": "2026-10-01T20:30:00",
-    "arrival_time": "2026-10-01T22:15:00", "base_fare": 190.00,
+  { "flight_number": "NS1156", "departure_time": "2026-10-08T20:30:00",
+    "arrival_time": "2026-10-08T22:15:00", "base_fare": 190.00,
     "price_delta": -60.00, "available_seats": 111, "stops": 0 }
   // ...5 more flights. NS1120 has available_seats: 0 (sold out).
 ]
@@ -109,13 +111,13 @@ curl -X POST ".../rpc/search_flights" -H ...headers... \
 
 ### change_flight → change_seat → change_baggage → quote → confirm
 ```jsonc
-// change_flight  body: {"p_ref":"NS7K2Q","p_new_flight_number":"NS1156"}  → base 190, seat cleared
-// change_seat    body: {"p_ref":"NS7K2Q","p_new_seat_number":"6A"}        → window, €0 surcharge
-// change_baggage body: {"p_ref":"NS7K2Q","p_baggage_count":2}             → +€45
-// quote_booking  body: {"p_ref":"NS7K2Q"}
+// change_flight  body: {"p_ref":"ABC123","p_new_flight_number":"NS1156"}  → base 190, seat cleared
+// change_seat    body: {"p_ref":"ABC123","p_new_seat_number":"6A"}        → window, €0 surcharge
+// change_baggage body: {"p_ref":"ABC123","p_baggage_count":2}             → +€45
+// quote_booking  body: {"p_ref":"ABC123"}
 //   → { "flight_change": -60, "seat_change": 0, "baggage_change": 45, "total_change": -15, "currency": "EUR" }
-// confirm_booking body: {"p_ref":"NS7K2Q"}
-//   → { "confirmation": "confirmed", "boarding_pass_ref": "BP-NS7K2Q-NS1156", "crm_synced": true, "email_sent": true }
+// confirm_booking body: {"p_ref":"ABC123"}
+//   → { "confirmation": "confirmed", "boarding_pass_ref": "BP-ABC123-NS1156", "crm_synced": true, "email_sent": true }
 ```
 
 ---

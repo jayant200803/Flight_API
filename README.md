@@ -5,14 +5,14 @@ the database plus a set of PostgreSQL functions (RPC) that the AI agent and the
 frontend call directly over Supabase's auto-generated REST API. No server to run.
 
 Implements the 7 PRD endpoints (+ a baggage helper) and ships with seed data that
-matches the Nordic Sky demo scenes.
+matches the demo scenes.
 
 ## What's inside
 ```
 supabase/
   migrations/0001_schema.sql     tables + enums (flights, seats, customers, bookings, pricing)
   migrations/0002_functions.sql  the 7 RPC endpoints + helpers
-  seed.sql                       demo data (booking NS7K2Q, SIN->NRT flights, seat maps)
+  seed.sql                       demo data (booking ABC123, SIN->NRT flights, seat maps)
 tests/
   api.http                       click-to-run requests (VS Code REST Client extension)
   smoke-test.mjs                 runs the full 6-scene journey and checks the numbers
@@ -74,12 +74,12 @@ vercel --prod            # from the project root; uses vercel.json (serves ./pub
 the explorer ships. Hand the resulting URL to the integration team.
 
 ## The demo flow (what the agent does)
-1. `get_booking('NS7K2Q')` -> current booking (NS1142, 23C, EUR 250)
-2. `search_flights('OSL','LHR','2026-10-01','NS7K2Q')` -> 6 flights with price deltas
-3. `change_flight('NS7K2Q','NS1156')` -> moves to the cheaper flight, clears seat
-4. `get_seat_map('NS1156')` then `change_seat('NS7K2Q','6A')`
-5. `change_baggage('NS7K2Q',2)` then `quote_booking('NS7K2Q')` -> {-60, 0, +45, -15}
-6. `confirm_booking('NS7K2Q')` -> locks booking, boarding pass, CRM sync
+1. `get_booking('ABC123')` -> current booking (NS1142, 23C, EUR 250)
+2. `search_flights('SIN','NRT','2026-10-08','ABC123')` -> 6 flights with price deltas
+3. `change_flight('ABC123','NS1156')` -> moves to the cheaper flight, clears seat
+4. `get_seat_map('NS1156')` then `change_seat('ABC123','6A')`
+5. `change_baggage('ABC123',2)` then `quote_booking('ABC123')` -> {-60, 0, +45, -15}
+6. `confirm_booking('ABC123')` -> locks booking, boarding pass, CRM sync
 
 ## Notes
 - Money is EUR. 1 bag included; each extra bag EUR 45; demo change fee is 0.

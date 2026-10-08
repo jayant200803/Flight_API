@@ -9,7 +9,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q" }
+{ "p_ref": "ABC123" }
 
 ### 2. Search flights (SIN -> NRT, 8 Oct)
 POST {{baseUrl}}/search_flights
@@ -17,7 +17,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_origin": "SIN", "p_destination": "NRT", "p_date": "2026-10-08", "p_ref": "NS7K2Q" }
+{ "p_origin": "SIN", "p_destination": "NRT", "p_date": "2026-10-08", "p_ref": "ABC123" }
 
 ### 3. Change flight to NS1156
 POST {{baseUrl}}/change_flight
@@ -25,7 +25,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q", "p_new_flight_number": "NS1156" }
+{ "p_ref": "ABC123", "p_new_flight_number": "NS1156" }
 
 ### 4. Seat map for NS1156
 POST {{baseUrl}}/get_seat_map
@@ -41,7 +41,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q", "p_new_seat_number": "6A" }
+{ "p_ref": "ABC123", "p_new_seat_number": "6A" }
 
 ### 6. Add an extra bag (2 total)
 POST {{baseUrl}}/change_baggage
@@ -49,7 +49,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q", "p_baggage_count": 2 }
+{ "p_ref": "ABC123", "p_baggage_count": 2 }
 
 ### 7. Quote (price breakdown)
 POST {{baseUrl}}/quote_booking
@@ -57,7 +57,7 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q" }
+{ "p_ref": "ABC123" }
 
 ### 8. Confirm
 POST {{baseUrl}}/confirm_booking
@@ -65,4 +65,4 @@ apikey: {{apikey}}
 Authorization: Bearer {{apikey}}
 Content-Type: application/json
 
-{ "p_ref": "NS7K2Q" }
+{ "p_ref": "ABC123" }
