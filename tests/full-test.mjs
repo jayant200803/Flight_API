@@ -89,6 +89,13 @@ ok(b.status === 'confirmed', 'status confirmed');
 section('Case-insensitivity — lowercase inputs resolve');
 const lc = await call('get_booking', { p_ref: 'abc123' });
 ok(!lc.error && lc.booking_reference === 'ABC123', 'get_booking("abc123") resolves to ABC123');
+// voice transcription: spaced/punctuated refs are cleaned before matching
+const spoken = await call('get_booking', { p_ref: 'a b c 1 2 5' });
+ok(!spoken.error && spoken.booking_reference === 'ABC125', 'get_booking("a b c 1 2 5") resolves to ABC125');
+const dashed = await call('get_booking', { p_ref: 'abc-123' });
+ok(!dashed.error && dashed.booking_reference === 'ABC123', 'get_booking("abc-123") resolves to ABC123');
+const qSpoken = await call('quote_booking', { p_ref: 'A B C 1 2 3' });
+ok(!qSpoken.error && qSpoken.currency === 'EUR', 'quote_booking accepts spoken ref too');
 const lcSeat = await call('get_seat_map', { p_flight_number: 'ns1156' });
 ok(lcSeat.flight_number === 'ns1156' && Array.isArray(lcSeat.seats) && lcSeat.seats.length === 180, 'get_seat_map("ns1156") works lowercase');
 

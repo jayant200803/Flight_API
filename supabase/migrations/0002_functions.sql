@@ -13,6 +13,13 @@ begin
    where booking_id = p_booking_id;
 end $$;
 
+-- Helper: normalise a spoken/typed booking ref — strip spaces/punctuation, uppercase.
+-- e.g. "a b c 1 2 5" -> "ABC125", "abc-125" -> "ABC125".
+create or replace function _clean_ref(p text)
+returns text language sql immutable as $$
+  select upper(regexp_replace(coalesce(p, ''), '[^a-zA-Z0-9]', '', 'g'));
+$$;
+
 -- Helper: build the full booking object returned everywhere
 create or replace function _booking_json(p_ref text)
 returns jsonb language sql stable as $$
@@ -45,7 +52,7 @@ returns jsonb language sql stable as $$
     'updated_at',        b.updated_at
   )
   from bookings b join flights f on f.flight_id = b.flight_id
-  where upper(b.booking_reference) = upper(p_ref);
+  where upper(b.booking_reference) = _clean_ref(p_ref);
 $$;
 
 -- 1) GET /bookings/{ref}
@@ -68,10 +75,10 @@ returns json language plpgsql security definer set search_path = public as $$
 declare base numeric(10,2); v_cur_fnum text; arr jsonb; cheap jsonb;
 begin
   -- baseline + current flight number (only when a booking ref is given)
-  select orig_base_price into base from bookings where upper(booking_reference) = upper(p_ref);
+  select orig_base_price into base from bookings where upper(booking_reference) = _clean_ref(p_ref);
   select f.flight_number into v_cur_fnum
     from flights f join bookings b on b.flight_id = f.flight_id
-   where upper(b.booking_reference) = upper(p_ref);
+   where upper(b.booking_reference) = _clean_ref(p_ref);
 
   select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb) into arr from (
     select f.flight_number,
@@ -120,7 +127,7 @@ create or replace function change_flight(p_ref text, p_new_flight_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype; v_flight flights%rowtype;
 begin
-  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
+  select * into v_booking from bookings where upper(booking_reference) = _clean_ref(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   select * into v_flight from flights where upper(flight_number) = upper(p_new_flight_number);
   if not found then return jsonb_build_object('error','flight_not_found','flight_number',p_new_flight_number); end if;
@@ -278,7 +285,7 @@ create or replace function change_seat(p_ref text, p_new_seat_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype; v_seat seats%rowtype;
 begin
-  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
+  select * into v_booking from bookings where upper(booking_reference) = _clean_ref(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
 
   select * into v_seat from seats
@@ -314,7 +321,7 @@ create or replace function change_baggage(p_ref text, p_baggage_count int)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype;
 begin
-  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
+  select * into v_booking from bookings where upper(booking_reference) = _clean_ref(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   if p_baggage_count < 1 then return jsonb_build_object('error','min_one_bag'); end if;
 
@@ -335,7 +342,7 @@ create or replace function quote_booking(p_ref text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare b bookings%rowtype; fc numeric; sc numeric; bc numeric;
 begin
-  select * into b from bookings where upper(booking_reference) = upper(p_ref);
+  select * into b from bookings where upper(booking_reference) = _clean_ref(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   fc := round(b.base_price     - b.orig_base_price, 2);
   sc := round(b.seat_surcharge - b.orig_seat_surcharge, 2);
@@ -354,7 +361,7 @@ create or replace function confirm_booking(p_ref text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare b bookings%rowtype; v_pass text;
 begin
-  select * into b from bookings where upper(booking_reference) = upper(p_ref);
+  select * into b from bookings where upper(booking_reference) = _clean_ref(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   if b.seat_number is null then
     return jsonb_build_object('error','no_seat_selected',

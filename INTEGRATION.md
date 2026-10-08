@@ -36,6 +36,8 @@ Content-Type: application/json
 With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
 > **Inputs are case-insensitive:** booking reference, flight number, seat number and airport codes all match regardless of case — `abc123`, `ABC123`, `ns1156`, `6a` all work.
+>
+> **Booking refs are also cleaned for voice:** spaces and punctuation are stripped before matching, so `"a b c 1 2 5"`, `"abc-125"`, `"ABC 125"` all resolve to `ABC125`.
 
 ---
 
