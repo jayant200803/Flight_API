@@ -42,7 +42,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 | Function | Purpose | Arguments |
 |---|---|---|
 | `get_booking` | Retrieve current booking | `p_ref` |
-| `search_flights` | Search flights by route/date | `p_origin`, `p_destination`, `p_date`, `p_ref` |
+| `search_flights` | Search flights by route/date | `p_origin`, `p_destination`, `p_date`, `p_ref` *(optional)* |
 | `change_flight` | Change flight (clears seat) | `p_ref`, `p_new_flight_number` |
 | `get_seat_map` | Seat map for a flight | `p_flight_number` |
 | `change_seat` | Select a seat | `p_ref`, `p_new_seat_number` |

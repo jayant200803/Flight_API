@@ -81,13 +81,13 @@ begin
     order by f.departure_time
     limit 6
   ) t;
-  -- cheapest flight that still has seats (summary for the voice agent)
+  -- cheapest flight that still has seats (by actual fare, so it works with or without p_ref)
   select to_jsonb(x) into cheap from (
     select e->>'flight_number' as flight_number,
            (e->>'price_delta')::numeric as price_delta
     from jsonb_array_elements(arr) e
     where (e->>'available_seats')::int > 0
-    order by (e->>'price_delta')::numeric asc, e->>'departure_time' asc
+    order by (e->>'base_fare')::numeric asc, e->>'departure_time' asc
     limit 1
   ) x;
   return jsonb_build_object(

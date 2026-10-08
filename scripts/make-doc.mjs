@@ -88,7 +88,7 @@ const endpoints = [
       ['p_origin', 'string', 'Origin airport IATA (SIN)'],
       ['p_destination', 'string', 'Destination airport IATA (NRT)'],
       ['p_date', 'string (date)', 'Departure date, e.g. 2026-10-08'],
-      ['p_ref', 'string', 'Booking ref (for the price-delta baseline)'],
+      ['p_ref', 'string (optional)', 'Booking ref for the price-delta baseline. Omit for callers with no booking — cheapest is still the lowest fare.'],
     ],
     reply: [
       ['count', 'number', 'How many flights returned'],
