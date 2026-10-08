@@ -116,7 +116,10 @@ const endpoints = [
     n: 4, name: 'Get seat map', fn: 'get_seat_map',
     when: 'Use after a flight change to see which seats are free before the caller chooses. Filter for seat_type = window/aisle and status = available.',
     body: '{ "p_flight_number": "NS1156" }',
-    reqFields: [['p_flight_number', 'string', 'Flight number, e.g. NS1156']],
+    reqFields: [
+      ['p_flight_number', 'string', 'Flight number, e.g. NS1156'],
+      ['p_summary_only', 'boolean (optional)', 'true = omit the seats array (agent). Default false = full grid (UI).'],
+    ],
     reply: [
       ['total', 'number', 'Seats on the aircraft (180)'],
       ['available_count', 'number', 'How many are free'],

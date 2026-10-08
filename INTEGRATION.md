@@ -46,8 +46,8 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 | `get_booking` | Retrieve current booking | `p_ref` |
 | `search_flights` | Search flights by route/date | `p_origin`, `p_destination`, `p_date`, `p_ref` *(optional)* |
 | `change_flight` | Change flight (clears seat) | `p_ref`, `p_new_flight_number` |
-| `get_seat_map` | Full seat map (180 seats) — for the **frontend** grid | `p_flight_number` |
-| `get_seat_options` | Seat summary only (no seats array) — for the **voice agent** | `p_flight_number` |
+| `get_seat_map` | Seat map; pass `p_summary_only=true` for summary only (agent), default `false` = full 180-seat grid (UI) | `p_flight_number`, `p_summary_only` *(opt, default false)* |
+| `get_seat_options` | Seat summary only (no seats array) — alias of `get_seat_map` summary mode | `p_flight_number` |
 | `change_seat` | Select a seat | `p_ref`, `p_new_seat_number` |
 | `change_baggage` | Set number of bags (1 incl., €45/extra) | `p_ref`, `p_baggage_count` |
 | `quote_booking` | Itemised price change vs last confirmed | `p_ref` |
@@ -56,7 +56,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
 ### Response shapes to note (voice-agent friendly)
 - **`search_flights`** returns an **object**: `{ count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta, flights: [...] }`. The list is under `flights`. **`p_ref` is optional** — with it, cheapest = lowest `price_delta` (excluding the current flight) and each flight has a `price_delta`; without it, cheapest = lowest `base_fare`, `cheapest_price_delta` is `null`, and every flight's `price_delta` is `null`.
-- **Voice agent: use `get_seat_options`** (not `get_seat_map`) to offer seats. It returns only `{ flight_number, available_count, available_window_seats, available_aisle_seats, available_middle_seats }` — a tiny reply so agent platforms that cap response parsing still read the fields. `get_seat_map` additionally returns the full 180-seat `seats` array for the frontend grid.
+- **Voice agent: call `get_seat_map` with `p_summary_only: true`** to offer seats — returns only `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats }` (no seats array), a tiny reply so agent platforms that cap response parsing still read the fields. The **UI** calls it with the default (`p_summary_only` omitted / false) to get the full 180-seat grid. (`get_seat_options` is a no-arg-flag alias that always returns the summary.)
 - **`get_seat_map`** returns an **object**: `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats, seats: [...] }`. The seat list is under `seats`; the `available_*_seats` fields are comma strings of the first 10 free seats of each type, **FREE (€0) listed first** (so the agent offers 6A/6F before any €15 front-row seat). Seat types are **window** (A/F), **aisle** (C/D), **middle** (B/E), **emergency_row** (rows 12–13). Middle seats appear only in `available_middle_seats`, never in the aisle list.
 - **Any change re-opens the booking:** `change_flight` / `change_seat` / `change_baggage` set `status` to `pending` and clear `boarding_pass_ref` until `confirm_booking` runs again.
 

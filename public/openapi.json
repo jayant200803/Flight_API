@@ -192,6 +192,11 @@
                   "p_flight_number": {
                     "type": "string",
                     "example": "NS1156"
+                  },
+                  "p_summary_only": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "true = omit the 180-seat array (tiny reply for the voice agent). Default false = full grid for the UI."
                   }
                 }
               }
@@ -200,7 +205,7 @@
         },
         "responses": {
           "200": {
-            "description": "Object: { flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats, seats[] }. Summary lists are free(0 EUR)-first. Seat types: window(A/F), aisle(C/D), middle(B/E), emergency_row(12-13)."
+            "description": "Object with summary fields first; includes seats[] unless p_summary_only=true."
           }
         },
         "operationId": "get_seat_map"

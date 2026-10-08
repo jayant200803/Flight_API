@@ -150,21 +150,15 @@ begin
 end $$;
 
 -- 4) GET /flights/{id}/seats  (seat map)
--- Returns json (ordered) so the summary fields come FIRST, before the big seats
--- array — some agent platforms truncate large replies and would miss trailing keys.
+-- Returns json (ordered) with the summary fields FIRST. Pass p_summary_only=true
+-- to omit the 180-seat array entirely (tiny reply for the voice agent); the UI
+-- calls it with the default (false) to get the full grid.
 drop function if exists get_seat_map(text);
-create or replace function get_seat_map(p_flight_number text)
+drop function if exists get_seat_map(text, boolean);
+create or replace function get_seat_map(p_flight_number text, p_summary_only boolean default false)
 returns json language plpgsql security definer set search_path = public as $$
-declare arr jsonb; win text; ais text; mid text; avail int;
+declare arr jsonb; win text; ais text; mid text; avail int; tot int;
 begin
-  select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb)
-    into arr
-  from (
-    select s.seat_number, s.row_number, s.column_letter,
-           s.seat_type, s.status, s.base_price_delta
-    from seats s join flights f on f.flight_id = s.flight_id
-    where upper(f.flight_number) = upper(p_flight_number)
-  ) t;
   -- summaries for the voice agent: first 10 available of each type, FREE (€0) first.
   select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
     select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
@@ -181,12 +175,35 @@ begin
     from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'middle' and s.status = 'available'
     order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
-  select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
-    where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
-  -- summary fields FIRST (ordered json), seats array LAST
+  select count(*) filter (where s.status = 'available'), count(*)
+    into avail, tot
+    from seats s join flights f on f.flight_id = s.flight_id
+   where upper(f.flight_number) = upper(p_flight_number);
+
+  -- summary-only: tiny reply, no seats array
+  if p_summary_only then
+    return json_build_object(
+      'flight_number', p_flight_number,
+      'total', tot,
+      'available_count', avail,
+      'available_window_seats', coalesce(win, ''),
+      'available_aisle_seats', coalesce(ais, ''),
+      'available_middle_seats', coalesce(mid, '')
+    );
+  end if;
+
+  -- full map: summary fields FIRST (ordered json), seats array LAST
+  select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb)
+    into arr
+  from (
+    select s.seat_number, s.row_number, s.column_letter,
+           s.seat_type, s.status, s.base_price_delta
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number)
+  ) t;
   return json_build_object(
     'flight_number', p_flight_number,
-    'total', jsonb_array_length(arr),
+    'total', tot,
     'available_count', avail,
     'available_window_seats', coalesce(win, ''),
     'available_aisle_seats', coalesce(ais, ''),
@@ -406,6 +423,6 @@ end $$;
 -- ---------- Grants: let the anon/auth API roles call the functions ----------
 grant execute on function
   get_booking(text), search_flights(text,text,date,text), change_flight(text,text),
-  get_seat_map(text), get_seat_options(text), change_seat(text,text), change_baggage(text,int),
+  get_seat_map(text, boolean), get_seat_options(text), change_seat(text,text), change_baggage(text,int),
   quote_booking(text), confirm_booking(text), reset_demo()
 to anon, authenticated;
