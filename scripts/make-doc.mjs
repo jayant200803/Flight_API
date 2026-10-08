@@ -130,6 +130,18 @@ const endpoints = [
     ],
   },
   {
+    n: '4b', name: 'Seat options (voice agent)', fn: 'get_seat_options',
+    when: 'Use THIS (not get_seat_map) to offer seats on a call. Returns only the summary lists — no 180-seat array — so the reply is tiny and the agent reliably reads the fields.',
+    body: '{ "p_flight_number": "NS1156" }',
+    reqFields: [['p_flight_number', 'string', 'Flight number, e.g. NS1156']],
+    reply: [
+      ['available_count', 'number', 'How many seats are free'],
+      ['available_window_seats', 'string', 'Free window seats, free(€0) first'],
+      ['available_aisle_seats', 'string', 'Free aisle seats C/D'],
+      ['available_middle_seats', 'string', 'Free middle seats B/E'],
+    ],
+  },
+  {
     n: 5, name: 'Change seat', fn: 'change_seat',
     when: 'Use after the caller chooses a seat. Applies the seat surcharge (window €0, front row €15, emergency row €25).',
     body: '{ "p_ref": "ABC123", "p_new_seat_number": "6A" }',

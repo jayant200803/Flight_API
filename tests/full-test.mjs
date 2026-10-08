@@ -61,6 +61,7 @@ async function reset() {
 
 console.log('Resetting demo booking to starting state...');
 await reset();
+await call('reset_demo', {});   // also guarantees NS1156: 23C booked, 6A/6F free
 
 // ---------------------------------------------------------------
 section('Error handling — get_booking');
@@ -169,6 +170,13 @@ ok(sm.available_middle_seats.split(', ').filter(Boolean).every(s => ['B','E'].in
 ok(seatmap.find(s => s.seat_number === '23C').status === 'booked', '23C is booked (unavailable) on NS1156');
 const windowsFree = seatmap.filter(s => s.seat_type === 'window' && s.status === 'available');
 ok(windowsFree.some(s => s.seat_number === '6A') && windowsFree.some(s => s.seat_number === '6F'), '6A and 6F are free window seats');
+
+section('get_seat_options — lightweight summary for the voice agent (no seats array)');
+const opts = await call('get_seat_options', { p_flight_number: 'NS1156' });
+ok(opts.seats === undefined, 'get_seat_options has NO heavy seats array');
+ok(opts.available_window_seats.startsWith('6A, 6F'), 'get_seat_options window list free-first (6A, 6F)');
+ok(typeof opts.available_aisle_seats === 'string' && typeof opts.available_middle_seats === 'string', 'get_seat_options has aisle + middle lists');
+ok(n(opts.available_count) > 0, 'get_seat_options has available_count');
 const hasExit = seatmap.some(s => s.seat_type === 'emergency_row' && n(s.base_price_delta) === 25);
 ok(hasExit, 'emergency_row seats carry +25 surcharge');
 const hasFront = seatmap.some(s => s.row_number <= 2 && n(s.base_price_delta) === 15);

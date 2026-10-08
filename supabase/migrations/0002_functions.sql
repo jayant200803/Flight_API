@@ -195,6 +195,40 @@ begin
   );
 end $$;
 
+-- 4b) Lightweight seat summary for the VOICE AGENT — same summary fields as
+--     get_seat_map but WITHOUT the 180-seat array, so the reply is tiny and agent
+--     platforms (which cap how much they parse) always find the fields.
+drop function if exists get_seat_options(text);
+create or replace function get_seat_options(p_flight_number text)
+returns json language plpgsql security definer set search_path = public as $$
+declare win text; ais text; mid text; avail int;
+begin
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'window' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into ais from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'aisle' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into mid from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'middle' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
+  return json_build_object(
+    'flight_number', p_flight_number,
+    'available_count', avail,
+    'available_window_seats', coalesce(win, ''),
+    'available_aisle_seats', coalesce(ais, ''),
+    'available_middle_seats', coalesce(mid, '')
+  );
+end $$;
+
 -- 5) PATCH /bookings/{ref}/seat
 create or replace function change_seat(p_ref text, p_new_seat_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
@@ -372,6 +406,6 @@ end $$;
 -- ---------- Grants: let the anon/auth API roles call the functions ----------
 grant execute on function
   get_booking(text), search_flights(text,text,date,text), change_flight(text,text),
-  get_seat_map(text), change_seat(text,text), change_baggage(text,int),
+  get_seat_map(text), get_seat_options(text), change_seat(text,text), change_baggage(text,int),
   quote_booking(text), confirm_booking(text), reset_demo()
 to anon, authenticated;

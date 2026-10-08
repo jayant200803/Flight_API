@@ -380,6 +380,40 @@
           }
         }
       }
+    },
+    "/rpc/get_seat_options": {
+      "post": {
+        "tags": [
+          "Flights"
+        ],
+        "summary": "Seat options (agent)",
+        "description": "Lightweight seat summary for the voice agent: { flight_number, available_count, available_window_seats, available_aisle_seats, available_middle_seats }. No seats array, so agent platforms that cap response parsing always read the fields. Free (0 EUR) seats listed first.",
+        "operationId": "get_seat_options",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "p_flight_number"
+                ],
+                "properties": {
+                  "p_flight_number": {
+                    "type": "string",
+                    "example": "NS1156"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Seat summary object (no seats array)"
+          }
+        }
+      }
     }
   }
 }
