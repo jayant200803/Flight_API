@@ -89,7 +89,8 @@ section('Scene 2 — flight search + price deltas + availability scenarios');
 const search = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08', p_ref: REF });
 ok(search.count === 6 && Array.isArray(search.flights) && search.flights.length === 6, 'returns object with 6 flights');
 ok(search.cheapest_flight_number === 'NS1156', 'summary cheapest_flight_number is NS1156');
-ok(n(search.cheapest_price_delta) === -60, 'summary cheapest_price_delta is -60');
+ok(n(search.cheapest_price_delta) === -60, 'summary cheapest_price_delta is -60 (with p_ref)');
+ok(n(search.cheapest_base_fare) === 190, 'summary cheapest_base_fare is 190');
 const flights = search.flights;
 const sorted = flights.every((f, i) => i === 0 || f.departure_time >= flights[i-1].departure_time);
 ok(sorted, 'flights sorted by departure time');
@@ -108,10 +109,13 @@ ok(none.count === 0 && none.flights.length === 0, 'unknown route returns empty l
 ok(none.cheapest_flight_number === null, 'no cheapest when no flights');
 const lower = await call('search_flights', { p_origin: 'sin', p_destination: 'nrt', p_date: '2026-10-08', p_ref: REF });
 ok(lower.flights.length === 6, 'origin/destination are case-insensitive');
-// p_ref is optional: caller with no booking still gets the true cheapest (by fare), not earliest
+// p_ref is optional: caller with no booking -> cheapest by lowest base_fare, deltas are null
 const noRef = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08' });
 ok(noRef.flights.length === 6, 'search works without p_ref (optional)');
-ok(noRef.cheapest_flight_number === 'NS1156', 'without p_ref, cheapest is NS1156 (lowest fare 190), not earliest');
+ok(noRef.cheapest_flight_number === 'NS1156', 'without p_ref, cheapest is NS1156 (lowest fare)');
+ok(n(noRef.cheapest_base_fare) === 190, 'without p_ref, cheapest_base_fare is 190');
+ok(noRef.cheapest_price_delta === null, 'without p_ref, cheapest_price_delta is null');
+ok(noRef.flights.every(f => f.price_delta === null), 'without p_ref, every flight price_delta is null');
 
 // ---------------------------------------------------------------
 section('Error handling — change_flight');

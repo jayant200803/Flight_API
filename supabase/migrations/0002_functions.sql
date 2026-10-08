@@ -64,15 +64,21 @@ end $$;
 create or replace function search_flights(
   p_origin text, p_destination text, p_date date, p_ref text default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare base numeric(10,2); arr jsonb; cheap jsonb;
+declare base numeric(10,2); v_cur_fnum text; arr jsonb; cheap jsonb;
 begin
+  -- baseline + current flight number (only when a booking ref is given)
   select orig_base_price into base from bookings where booking_reference = p_ref;
+  select f.flight_number into v_cur_fnum
+    from flights f join bookings b on b.flight_id = f.flight_id
+   where b.booking_reference = p_ref;
+
   select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb) into arr from (
     select f.flight_number,
            f.departure_time, f.arrival_time,
            0 as stops,
            f.base_fare as base_fare,
-           round(f.base_fare - coalesce(base, f.base_fare), 2) as price_delta,
+           -- no booking -> price_delta is null (nothing to compare against)
+           case when base is null then null else round(f.base_fare - base, 2) end as price_delta,
            (f.total_seats - f.occupied_seats) as available_seats
     from flights f
     where f.origin_airport = upper(p_origin)
@@ -81,19 +87,28 @@ begin
     order by f.departure_time
     limit 6
   ) t;
-  -- cheapest flight that still has seats (by actual fare, so it works with or without p_ref)
+
+  -- cheapest flight with seats.
+  --  * no booking  -> lowest base_fare
+  --  * with booking -> lowest price_delta, excluding the current flight
   select to_jsonb(x) into cheap from (
     select e->>'flight_number' as flight_number,
+           (e->>'base_fare')::numeric  as base_fare,
            (e->>'price_delta')::numeric as price_delta
     from jsonb_array_elements(arr) e
     where (e->>'available_seats')::int > 0
-    order by (e->>'base_fare')::numeric asc, e->>'departure_time' asc
+      and (v_cur_fnum is null or e->>'flight_number' <> v_cur_fnum)
+    order by case when base is null then (e->>'base_fare')::numeric
+                  else (e->>'price_delta')::numeric end asc,
+             e->>'departure_time' asc
     limit 1
   ) x;
+
   return jsonb_build_object(
     'count', jsonb_array_length(arr),
     'cheapest_flight_number', cheap->>'flight_number',
-    'cheapest_price_delta', (cheap->>'price_delta')::numeric,
+    'cheapest_base_fare', (cheap->>'base_fare')::numeric,
+    'cheapest_price_delta', case when base is null then null else (cheap->>'price_delta')::numeric end,
     'flights', arr
   );
 end $$;
