@@ -49,10 +49,16 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 | `change_baggage` | Set number of bags (1 incl., €45/extra) | `p_ref`, `p_baggage_count` |
 | `quote_booking` | Itemised price change vs last confirmed | `p_ref` |
 | `confirm_booking` | Lock booking, issue boarding pass | `p_ref` |
+| `reset_demo` | Reset ABC123 to the start state (demo helper) | *(none)* |
+
+### Response shapes to note (voice-agent friendly)
+- **`search_flights`** returns an **object**: `{ count, cheapest_flight_number, cheapest_price_delta, flights: [...] }`. The list is under `flights`.
+- **`get_seat_map`** returns an **object**: `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, seats: [...] }`. The seat list is under `seats`; the `available_*_seats` fields are comma strings of the first 10 free seats of each type.
+- **Any change re-opens the booking:** `change_flight` / `change_seat` / `change_baggage` set `status` to `pending` and clear `boarding_pass_ref` until `confirm_booking` runs again.
 
 ### Error handling
 Errors return **HTTP 200** with an `{ "error": "..." }` body. Always check for an `error` key.
-Possible values: `booking_not_found`, `flight_not_found`, `seat_not_found`, `seat_unavailable`, `min_one_bag`, `no_seat_selected` (confirm attempted with no seat).
+Possible values: `booking_not_found`, `flight_not_found`, `already_on_flight` (changing to the current flight), `seat_not_found`, `seat_unavailable`, `min_one_bag`, `no_seat_selected` (confirm with no seat).
 
 ---
 
@@ -101,12 +107,30 @@ curl -X POST ".../rpc/search_flights" -H ...headers... \
   -d '{"p_origin":"SIN","p_destination":"NRT","p_date":"2026-10-08","p_ref":"ABC123"}'
 ```
 ```json
-[
-  { "flight_number": "NS1156", "departure_time": "2026-10-08T20:30:00",
-    "arrival_time": "2026-10-08T22:15:00", "base_fare": 190.00,
-    "price_delta": -60.00, "available_seats": 111, "stops": 0 }
-  // ...5 more flights. NS1120 has available_seats: 0 (sold out).
-]
+{
+  "count": 6,
+  "cheapest_flight_number": "NS1156",
+  "cheapest_price_delta": -60,
+  "flights": [
+    { "flight_number": "NS1156", "departure_time": "2026-10-08T20:30:00",
+      "arrival_time": "2026-10-08T22:15:00", "base_fare": 190.00,
+      "price_delta": -60.00, "available_seats": 111, "stops": 0 }
+    // ...5 more flights. NS1120 has available_seats: 0 (sold out).
+  ]
+}
+```
+
+### get_seat_map (response shape)
+```json
+{
+  "flight_number": "NS1156",
+  "total": 180,
+  "available_count": 111,
+  "available_window_seats": "1A, 1F, 6A, 6F, ...",
+  "available_aisle_seats": "6C, 6D, 7C, ...",
+  "seats": [ { "seat_number": "6A", "row_number": 6, "column_letter": "A",
+               "seat_type": "window", "status": "available", "base_price_delta": 0 } ]
+}
 ```
 
 ### change_flight → change_seat → change_baggage → quote → confirm

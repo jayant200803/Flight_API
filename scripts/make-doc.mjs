@@ -91,12 +91,14 @@ const endpoints = [
       ['p_ref', 'string', 'Booking ref (for the price-delta baseline)'],
     ],
     reply: [
-      ['[].flight_number', 'string', 'Flight number'],
-      ['[].departure_time / arrival_time', 'datetime', 'Times'],
-      ['[].base_fare', 'number', 'Fare in EUR'],
-      ['[].price_delta', 'number', 'Change vs current (negative = cheaper)'],
-      ['[].available_seats', 'number', 'Free seats (0 = sold out)'],
-      ['[].stops', 'number', 'Always 0 (direct)'],
+      ['count', 'number', 'How many flights returned'],
+      ['cheapest_flight_number', 'string', 'Cheapest flight WITH seats (summary)'],
+      ['cheapest_price_delta', 'number', 'Its price difference (e.g. -60)'],
+      ['flights[].flight_number', 'string', 'Flight number'],
+      ['flights[].departure_time / arrival_time', 'datetime', 'Times'],
+      ['flights[].base_fare', 'number', 'Fare in EUR'],
+      ['flights[].price_delta', 'number', 'Change vs current (negative = cheaper)'],
+      ['flights[].available_seats', 'number', 'Free seats (0 = sold out)'],
     ],
   },
   {
@@ -107,7 +109,7 @@ const endpoints = [
       ['p_ref', 'string', 'Booking reference'],
       ['p_new_flight_number', 'string', 'Target flight number, e.g. NS1156'],
     ],
-    reply: [['(same as Get booking)', 'object', 'Returns the updated booking; seat_number is now null']],
+    reply: [['(same as Get booking)', 'object', 'Updated booking; seat cleared, status -> pending, boarding pass cleared. Error: already_on_flight if it is the current flight']],
   },
   {
     n: 4, name: 'Get seat map', fn: 'get_seat_map',
@@ -115,11 +117,14 @@ const endpoints = [
     body: '{ "p_flight_number": "NS1156" }',
     reqFields: [['p_flight_number', 'string', 'Flight number, e.g. NS1156']],
     reply: [
-      ['[].seat_number', 'string', 'e.g. 6A'],
-      ['[].seat_type', 'string', 'window / aisle / emergency_row'],
-      ['[].status', 'string', 'available / booked / blocked'],
-      ['[].base_price_delta', 'number', 'Surcharge: 0 / 15 / 25 EUR'],
-      ['[].row_number / column_letter', 'number/string', 'Grid position'],
+      ['total', 'number', 'Seats on the aircraft (180)'],
+      ['available_count', 'number', 'How many are free'],
+      ['available_window_seats', 'string', 'Comma list, e.g. "6A, 6F" (first 10)'],
+      ['available_aisle_seats', 'string', 'Comma list of free aisle seats (first 10)'],
+      ['seats[].seat_number', 'string', 'e.g. 6A'],
+      ['seats[].seat_type', 'string', 'window / aisle / emergency_row'],
+      ['seats[].status', 'string', 'available / booked / blocked'],
+      ['seats[].base_price_delta', 'number', 'Surcharge: 0 / 15 / 25 EUR'],
     ],
   },
   {
@@ -168,6 +173,13 @@ const endpoints = [
       ['booking', 'object', 'Full updated booking'],
       ['error', 'string', 'no_seat_selected if confirming with no seat chosen'],
     ],
+  },
+  {
+    n: 9, name: 'Reset demo (helper)', fn: 'reset_demo',
+    when: 'Not part of the caller flow — a helper for testing. Resets booking ABC123 to the starting state (NS1142, seat 23C, 1 bag, EUR 250, confirmed). Call it before a fresh demo run.',
+    body: '{ }',
+    reqFields: [['(none)', '-', 'Takes no arguments']],
+    reply: [['(same as Get booking)', 'object', 'The booking restored to its starting state']],
   },
 ];
 

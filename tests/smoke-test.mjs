@@ -21,8 +21,8 @@ let b = await call('get_booking', { p_ref: REF });
 assert(b.flight.flight_number === 'NS1142', 'starts on NS1142');
 
 console.log('Scene 2 - search flights');
-const flights = await call('search_flights', { p_origin:'SIN', p_destination:'NRT', p_date:'2026-10-08', p_ref: REF });
-const ns1156 = flights.find(f => f.flight_number === 'NS1156');
+const search = await call('search_flights', { p_origin:'SIN', p_destination:'NRT', p_date:'2026-10-08', p_ref: REF });
+const ns1156 = search.flights.find(f => f.flight_number === 'NS1156');
 assert(ns1156 && Number(ns1156.price_delta) === -60, 'NS1156 is -60 EUR');
 
 console.log('Scene 3 - change flight');

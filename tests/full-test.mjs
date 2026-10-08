@@ -86,8 +86,11 @@ ok(b.status === 'confirmed', 'status confirmed');
 
 // ---------------------------------------------------------------
 section('Scene 2 — flight search + price deltas + availability scenarios');
-const flights = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08', p_ref: REF });
-ok(Array.isArray(flights) && flights.length === 6, 'returns 6 flights');
+const search = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08', p_ref: REF });
+ok(search.count === 6 && Array.isArray(search.flights) && search.flights.length === 6, 'returns object with 6 flights');
+ok(search.cheapest_flight_number === 'NS1156', 'summary cheapest_flight_number is NS1156');
+ok(n(search.cheapest_price_delta) === -60, 'summary cheapest_price_delta is -60');
+const flights = search.flights;
 const sorted = flights.every((f, i) => i === 0 || f.departure_time >= flights[i-1].departure_time);
 ok(sorted, 'flights sorted by departure time');
 const by = Object.fromEntries(flights.map(f => [f.flight_number, f]));
@@ -101,21 +104,26 @@ ok(n(by['NS1156'].available_seats) > 0, 'NS1156 has seats available');
 
 section('Scene 2b — search edge cases');
 const none = await call('search_flights', { p_origin: 'XXX', p_destination: 'YYY', p_date: '2026-10-08', p_ref: REF });
-ok(Array.isArray(none) && none.length === 0, 'unknown route returns empty list');
+ok(none.count === 0 && none.flights.length === 0, 'unknown route returns empty list');
+ok(none.cheapest_flight_number === null, 'no cheapest when no flights');
 const lower = await call('search_flights', { p_origin: 'sin', p_destination: 'nrt', p_date: '2026-10-08', p_ref: REF });
-ok(lower.length === 6, 'origin/destination are case-insensitive');
+ok(lower.flights.length === 6, 'origin/destination are case-insensitive');
 
 // ---------------------------------------------------------------
 section('Error handling — change_flight');
 ok((await call('change_flight', { p_ref: 'ZZZZZZ', p_new_flight_number: 'NS1156' })).error === 'booking_not_found', 'bad ref -> booking_not_found');
 ok((await call('change_flight', { p_ref: REF, p_new_flight_number: 'NS9999' })).error === 'flight_not_found', 'bad flight -> flight_not_found');
+ok((await call('change_flight', { p_ref: REF, p_new_flight_number: 'NS1142' })).error === 'already_on_flight', 'same flight (NS1142) -> already_on_flight');
+ok((await call('get_booking', { p_ref: REF })).seat_number === '23C', 'seat preserved when already_on_flight (not cleared)');
 
-section('Scene 3 — change flight to NS1156 (clears seat, base -> 190)');
+section('Scene 3 — change flight to NS1156 (clears seat, base -> 190, status -> pending)');
 b = await call('change_flight', { p_ref: REF, p_new_flight_number: 'NS1156' });
 ok(b.flight.flight_number === 'NS1156', 'moved to NS1156');
 ok(b.seat_number === null, 'seat selection cleared');
 ok(n(b.pricing.base_price) === 190, 'base price now 190');
 ok(n(b.pricing.seat_surcharge) === 0, 'seat surcharge reset to 0');
+ok(b.status === 'pending', 'status flipped to pending after change');
+ok(b.boarding_pass_ref === null, 'old boarding pass cleared after change');
 // verify old seat 23C on NS1142 was released
 const { data: old23c } = await admin.from('seats').select('status,booking_id')
   .eq('seat_number', '23C')
@@ -128,8 +136,12 @@ ok((await call('confirm_booking', { p_ref: REF })).error === 'no_seat_selected',
 
 // ---------------------------------------------------------------
 section('Scene 4 — seat map + seat selection');
-const seatmap = await call('get_seat_map', { p_flight_number: 'NS1156' });
-ok(Array.isArray(seatmap) && seatmap.length === 180, 'seat map returns 180 seats');
+const sm = await call('get_seat_map', { p_flight_number: 'NS1156' });
+const seatmap = sm.seats;
+ok(sm.total === 180 && seatmap.length === 180, 'seat map returns object with 180 seats');
+ok(typeof sm.available_window_seats === 'string' && sm.available_window_seats.length > 0, 'summary available_window_seats present: ' + sm.available_window_seats);
+ok(sm.available_window_seats.includes('6A') && sm.available_window_seats.includes('6F'), 'summary lists 6A and 6F as window seats');
+ok(n(sm.available_count) > 0, 'summary available_count present');
 const windowsFree = seatmap.filter(s => s.seat_type === 'window' && s.status === 'available');
 ok(windowsFree.some(s => s.seat_number === '6A') && windowsFree.some(s => s.seat_number === '6F'), '6A and 6F are free window seats');
 const hasExit = seatmap.some(s => s.seat_type === 'emergency_row' && n(s.base_price_delta) === 25);
@@ -182,6 +194,16 @@ ok(c.booking.status === 'confirmed', 'booking locked as confirmed');
 // after confirm, the quote baseline resets -> all deltas 0
 const q2 = await call('quote_booking', { p_ref: REF });
 ok(n(q2.total_change) === 0, 'quote baseline reset after confirm (total_change = 0)');
+
+// ---------------------------------------------------------------
+section('reset_demo RPC — restores the starting state');
+const rd = await call('reset_demo', {});
+ok(rd.flight.flight_number === 'NS1142', 'reset_demo -> back on NS1142');
+ok(rd.seat_number === '23C', 'reset_demo -> seat 23C');
+ok(rd.baggage_count === 1, 'reset_demo -> 1 bag');
+ok(n(rd.pricing.total_price) === 250, 'reset_demo -> total 250');
+ok(rd.status === 'confirmed', 'reset_demo -> status confirmed');
+ok(rd.boarding_pass_ref === null, 'reset_demo -> boarding pass cleared');
 
 // ---------------------------------------------------------------
 console.log('\n=====================================================');

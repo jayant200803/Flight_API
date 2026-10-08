@@ -126,7 +126,7 @@
         },
         "responses": {
           "200": {
-            "description": "Array of flights"
+            "description": "Object: { count, cheapest_flight_number, cheapest_price_delta, flights[] }"
           }
         },
         "operationId": "search_flights"
@@ -166,7 +166,7 @@
         },
         "responses": {
           "200": {
-            "description": "Updated booking (or { error })"
+            "description": "Updated booking (status -> pending, boarding pass cleared). Errors: flight_not_found, already_on_flight"
           }
         },
         "operationId": "change_flight"
@@ -200,7 +200,7 @@
         },
         "responses": {
           "200": {
-            "description": "Array of seats"
+            "description": "Object: { flight_number, total, available_count, available_window_seats, available_aisle_seats, seats[] }"
           }
         },
         "operationId": "get_seat_map"
@@ -240,7 +240,7 @@
         },
         "responses": {
           "200": {
-            "description": "Updated booking (or { error: seat_not_found | seat_unavailable })"
+            "description": "Updated booking (status -> pending). Errors: seat_not_found, seat_unavailable"
           }
         },
         "operationId": "change_seat"
@@ -349,10 +349,36 @@
         },
         "responses": {
           "200": {
-            "description": "Confirmation + boarding pass"
+            "description": "Confirmation + boarding pass. Error: no_seat_selected if no seat chosen"
           }
         },
         "operationId": "confirm_booking"
+      }
+    },
+    "/rpc/reset_demo": {
+      "post": {
+        "tags": [
+          "Booking"
+        ],
+        "summary": "Reset demo booking",
+        "description": "Demo helper: resets booking ABC123 to the starting state (NS1142, seat 23C, 1 bag, EUR 250, confirmed). Takes no arguments.",
+        "operationId": "reset_demo",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The booking restored to its starting state"
+          }
+        }
       }
     }
   }
