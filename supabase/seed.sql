@@ -19,7 +19,7 @@ insert into customers (account_number, customer_name, date_of_birth, email, phon
 ('AC7620','Shivam Sharma','1992-07-18','shivam@example.com','+65 8123 4567','CRM-AC7620');
 
 -- ---------- Seats for every flight (rows 1-30, cols A-F) ----------
--- Classification: A/F = window, C/D = aisle, B/E = aisle (no middle enum in PRD);
+-- Classification: A/F = window, C/D = aisle, B/E = middle;
 -- rows 12-13 = emergency_row (+25); rows 1-5 = front rows (+15); others = 0.
 do $$
 declare f record; r int; c text; cols text[] := array['A','B','C','D','E','F'];
@@ -35,9 +35,13 @@ begin
              else 0.40 end;
     for r in 1..30 loop
       foreach c in array cols loop
-        if r in (12,13) then st := 'emergency_row'; delta := 25;
-        elsif r between 1 and 5 then st := (case when c in ('A','F') then 'window' else 'aisle' end); delta := 15;
-        else st := (case when c in ('A','F') then 'window' else 'aisle' end); delta := 0;
+        if r in (12,13) then
+          st := 'emergency_row'; delta := 25;
+        else
+          st := case when c in ('A','F') then 'window'::seat_type
+                     when c in ('C','D') then 'aisle'::seat_type
+                     else 'middle'::seat_type end;   -- B/E = middle
+          delta := case when r between 1 and 5 then 15 else 0 end;
         end if;
         insert into seats (flight_id, seat_number, row_number, column_letter, seat_type, base_price_delta, status)
         values (f.flight_id, r::text||c, r, c, st, delta,
@@ -47,7 +51,10 @@ begin
   end loop;
 end $$;
 
--- Guarantee free demo target seats: 6A & 6F free on NS1156
+-- Guarantee demo seats on NS1156: 23C booked (so "23C not available on this flight"),
+-- and the two free window seats 6A & 6F available at EUR 0.
+update seats set status='booked', booking_id=null
+ where flight_id=(select flight_id from flights where flight_number='NS1156') and seat_number='23C';
 update seats set status='available', booking_id=null
  where flight_id=(select flight_id from flights where flight_number='NS1156') and seat_number in ('6A','6F');
 

@@ -35,6 +35,8 @@ Content-Type: application/json
 
 With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
+> **Inputs are case-insensitive:** booking reference, flight number, seat number and airport codes all match regardless of case — `abc123`, `ABC123`, `ns1156`, `6a` all work.
+
 ---
 
 ## 3. Endpoints
@@ -53,7 +55,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
 ### Response shapes to note (voice-agent friendly)
 - **`search_flights`** returns an **object**: `{ count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta, flights: [...] }`. The list is under `flights`. **`p_ref` is optional** — with it, cheapest = lowest `price_delta` (excluding the current flight) and each flight has a `price_delta`; without it, cheapest = lowest `base_fare`, `cheapest_price_delta` is `null`, and every flight's `price_delta` is `null`.
-- **`get_seat_map`** returns an **object**: `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, seats: [...] }`. The seat list is under `seats`; the `available_*_seats` fields are comma strings of the first 10 free seats of each type.
+- **`get_seat_map`** returns an **object**: `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats, seats: [...] }`. The seat list is under `seats`; the `available_*_seats` fields are comma strings of the first 10 free seats of each type, **FREE (€0) listed first** (so the agent offers 6A/6F before any €15 front-row seat). Seat types are **window** (A/F), **aisle** (C/D), **middle** (B/E), **emergency_row** (rows 12–13). Middle seats appear only in `available_middle_seats`, never in the aisle list.
 - **Any change re-opens the booking:** `change_flight` / `change_seat` / `change_baggage` set `status` to `pending` and clear `boarding_pass_ref` until `confirm_booking` runs again.
 
 ### Error handling
@@ -128,8 +130,9 @@ curl -X POST ".../rpc/search_flights" -H ...headers... \
   "flight_number": "NS1156",
   "total": 180,
   "available_count": 111,
-  "available_window_seats": "1A, 1F, 6A, 6F, ...",
-  "available_aisle_seats": "6C, 6D, 7C, ...",
+  "available_window_seats": "6A, 6F, 7A, 7F, ...",   // FREE first, then €15 front rows
+  "available_aisle_seats": "6C, 6D, 7C, ...",          // only C/D (true aisle)
+  "available_middle_seats": "6B, 6E, 7B, ...",         // B/E
   "seats": [ { "seat_number": "6A", "row_number": 6, "column_letter": "A",
                "seat_type": "window", "status": "available", "base_price_delta": 0 } ]
 }

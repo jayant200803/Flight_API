@@ -85,6 +85,13 @@ ok(b.baggage_weight_kg === 23, 'baggage weight is 23 kg per bag');
 ok(b.status === 'confirmed', 'status confirmed');
 
 // ---------------------------------------------------------------
+section('Case-insensitivity — lowercase inputs resolve');
+const lc = await call('get_booking', { p_ref: 'abc123' });
+ok(!lc.error && lc.booking_reference === 'ABC123', 'get_booking("abc123") resolves to ABC123');
+const lcSeat = await call('get_seat_map', { p_flight_number: 'ns1156' });
+ok(lcSeat.flight_number === 'ns1156' && Array.isArray(lcSeat.seats) && lcSeat.seats.length === 180, 'get_seat_map("ns1156") works lowercase');
+
+// ---------------------------------------------------------------
 section('Scene 2 — flight search + price deltas + availability scenarios');
 const search = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08', p_ref: REF });
 ok(search.count === 6 && Array.isArray(search.flights) && search.flights.length === 6, 'returns object with 6 flights');
@@ -150,6 +157,16 @@ ok(sm.total === 180 && seatmap.length === 180, 'seat map returns object with 180
 ok(typeof sm.available_window_seats === 'string' && sm.available_window_seats.length > 0, 'summary available_window_seats present: ' + sm.available_window_seats);
 ok(sm.available_window_seats.includes('6A') && sm.available_window_seats.includes('6F'), 'summary lists 6A and 6F as window seats');
 ok(n(sm.available_count) > 0, 'summary available_count present');
+// free (€0) seats listed first -> 6A/6F come before any €15 front-row window
+ok(sm.available_window_seats.startsWith('6A, 6F'), 'window list is FREE-first (starts 6A, 6F): ' + sm.available_window_seats);
+// aisle summary contains only true aisle seats (C/D), never middle (B/E)
+ok(sm.available_aisle_seats.split(', ').filter(Boolean).every(s => ['C','D'].includes(s.slice(-1))), 'available_aisle_seats are only C/D (no middle)');
+// middle seats exist, typed middle, and have their own list (B/E only)
+ok(seatmap.some(s => s.seat_type === 'middle'), 'B/E seats are typed middle');
+ok(typeof sm.available_middle_seats === 'string', 'available_middle_seats present');
+ok(sm.available_middle_seats.split(', ').filter(Boolean).every(s => ['B','E'].includes(s.slice(-1))), 'middle list is only B/E columns');
+// 23C is booked (unavailable) on NS1156, per the demo
+ok(seatmap.find(s => s.seat_number === '23C').status === 'booked', '23C is booked (unavailable) on NS1156');
 const windowsFree = seatmap.filter(s => s.seat_type === 'window' && s.status === 'available');
 ok(windowsFree.some(s => s.seat_number === '6A') && windowsFree.some(s => s.seat_number === '6F'), '6A and 6F are free window seats');
 const hasExit = seatmap.some(s => s.seat_type === 'emergency_row' && n(s.base_price_delta) === 25);
@@ -219,6 +236,12 @@ ok(rd.booking.seat_number === '23C', 'reset_demo -> ABC123 seat 23C');
 ok(n(rd.booking.pricing.total_price) === 250, 'reset_demo -> ABC123 total 250');
 ok(rd.booking.status === 'confirmed', 'reset_demo -> ABC123 confirmed');
 ok(rd.booking.boarding_pass_ref === null, 'reset_demo -> ABC123 boarding pass cleared');
+// after reset, NS1156 demo seats are guaranteed: 23C booked, 6A/6F free (€0)
+const smR = await call('get_seat_map', { p_flight_number: 'NS1156' });
+const seatR = Object.fromEntries(smR.seats.map(s => [s.seat_number, s]));
+ok(seatR['23C'].status === 'booked', 'reset_demo -> NS1156 23C booked (unavailable)');
+ok(seatR['6A'].status === 'available' && n(seatR['6A'].base_price_delta) === 0, 'reset_demo -> NS1156 6A free (€0)');
+ok(seatR['6F'].status === 'available' && n(seatR['6F'].base_price_delta) === 0, 'reset_demo -> NS1156 6F free (€0)');
 
 // ---------------------------------------------------------------
 console.log('\n=====================================================');

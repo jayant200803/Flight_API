@@ -45,7 +45,7 @@ returns jsonb language sql stable as $$
     'updated_at',        b.updated_at
   )
   from bookings b join flights f on f.flight_id = b.flight_id
-  where b.booking_reference = p_ref;
+  where upper(b.booking_reference) = upper(p_ref);
 $$;
 
 -- 1) GET /bookings/{ref}
@@ -67,10 +67,10 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare base numeric(10,2); v_cur_fnum text; arr jsonb; cheap jsonb;
 begin
   -- baseline + current flight number (only when a booking ref is given)
-  select orig_base_price into base from bookings where booking_reference = p_ref;
+  select orig_base_price into base from bookings where upper(booking_reference) = upper(p_ref);
   select f.flight_number into v_cur_fnum
     from flights f join bookings b on b.flight_id = f.flight_id
-   where b.booking_reference = p_ref;
+   where upper(b.booking_reference) = upper(p_ref);
 
   select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb) into arr from (
     select f.flight_number,
@@ -118,9 +118,9 @@ create or replace function change_flight(p_ref text, p_new_flight_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype; v_flight flights%rowtype;
 begin
-  select * into v_booking from bookings where booking_reference = p_ref;
+  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
-  select * into v_flight from flights where flight_number = p_new_flight_number;
+  select * into v_flight from flights where upper(flight_number) = upper(p_new_flight_number);
   if not found then return jsonb_build_object('error','flight_not_found','flight_number',p_new_flight_number); end if;
   if v_flight.flight_id = v_booking.flight_id then
     return jsonb_build_object('error','already_on_flight','flight_number',p_new_flight_number,
@@ -150,7 +150,7 @@ end $$;
 -- 4) GET /flights/{id}/seats  (seat map)
 create or replace function get_seat_map(p_flight_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare arr jsonb; win text; ais text; avail int;
+declare arr jsonb; win text; ais text; mid text; avail int;
 begin
   select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb)
     into arr
@@ -158,27 +158,33 @@ begin
     select s.seat_number, s.row_number, s.column_letter,
            s.seat_type, s.status, s.base_price_delta
     from seats s join flights f on f.flight_id = s.flight_id
-    where f.flight_number = p_flight_number
+    where upper(f.flight_number) = upper(p_flight_number)
   ) t;
-  -- summaries for the voice agent (first 10 available of each type, free of surcharge first)
-  select string_agg(seat_number, ', ' order by row_number, column_letter) into win from (
-    select s.seat_number, s.row_number, s.column_letter
+  -- summaries for the voice agent: first 10 available of each type, FREE (€0) first.
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
     from seats s join flights f on f.flight_id = s.flight_id
-    where f.flight_number = p_flight_number and s.seat_type = 'window' and s.status = 'available'
-    order by s.row_number, s.column_letter limit 10) z;
-  select string_agg(seat_number, ', ' order by row_number, column_letter) into ais from (
-    select s.seat_number, s.row_number, s.column_letter
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'window' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into ais from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
     from seats s join flights f on f.flight_id = s.flight_id
-    where f.flight_number = p_flight_number and s.seat_type = 'aisle' and s.status = 'available'
-    order by s.row_number, s.column_letter limit 10) z;
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'aisle' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into mid from (
+    select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'middle' and s.status = 'available'
+    order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
   select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
-    where f.flight_number = p_flight_number and s.status = 'available';
+    where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
   return jsonb_build_object(
     'flight_number', p_flight_number,
     'total', jsonb_array_length(arr),
     'available_count', avail,
     'available_window_seats', coalesce(win, ''),
     'available_aisle_seats', coalesce(ais, ''),
+    'available_middle_seats', coalesce(mid, ''),
     'seats', arr
   );
 end $$;
@@ -188,11 +194,11 @@ create or replace function change_seat(p_ref text, p_new_seat_number text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype; v_seat seats%rowtype;
 begin
-  select * into v_booking from bookings where booking_reference = p_ref;
+  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
 
   select * into v_seat from seats
-   where flight_id = v_booking.flight_id and seat_number = p_new_seat_number;
+   where flight_id = v_booking.flight_id and upper(seat_number) = upper(p_new_seat_number);
   if not found then return jsonb_build_object('error','seat_not_found','seat_number',p_new_seat_number); end if;
   if v_seat.status <> 'available' then
     return jsonb_build_object('error','seat_unavailable','seat_number',p_new_seat_number);
@@ -224,7 +230,7 @@ create or replace function change_baggage(p_ref text, p_baggage_count int)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_booking bookings%rowtype;
 begin
-  select * into v_booking from bookings where booking_reference = p_ref;
+  select * into v_booking from bookings where upper(booking_reference) = upper(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   if p_baggage_count < 1 then return jsonb_build_object('error','min_one_bag'); end if;
 
@@ -245,7 +251,7 @@ create or replace function quote_booking(p_ref text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare b bookings%rowtype; fc numeric; sc numeric; bc numeric;
 begin
-  select * into b from bookings where booking_reference = p_ref;
+  select * into b from bookings where upper(booking_reference) = upper(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   fc := round(b.base_price     - b.orig_base_price, 2);
   sc := round(b.seat_surcharge - b.orig_seat_surcharge, 2);
@@ -264,7 +270,7 @@ create or replace function confirm_booking(p_ref text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare b bookings%rowtype; v_pass text;
 begin
-  select * into b from bookings where booking_reference = p_ref;
+  select * into b from bookings where upper(booking_reference) = upper(p_ref);
   if not found then return jsonb_build_object('error','booking_not_found'); end if;
   if b.seat_number is null then
     return jsonb_build_object('error','no_seat_selected',
@@ -336,6 +342,12 @@ begin
     update seats set status='booked', booking_id=r.booking_id
      where flight_id = v_fid and seat_number = v_seat;
   end loop;
+
+  -- demo guarantee on NS1156: 23C unavailable, 6A/6F free (€0 window)
+  update seats set status='booked', booking_id=null
+   where flight_id = (select flight_id from flights where flight_number='NS1156') and seat_number = '23C';
+  update seats set status='available', booking_id=null
+   where flight_id = (select flight_id from flights where flight_number='NS1156') and seat_number in ('6A','6F');
 
   -- resync occupancy counters
   update flights f set occupied_seats = (

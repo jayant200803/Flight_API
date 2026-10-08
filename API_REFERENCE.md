@@ -32,8 +32,9 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 
 ### Notes for the agent/frontend teams
 - All money is EUR. Baggage: 1 bag included, each extra bag = EUR 45.
+- **Inputs are case-insensitive** — booking ref, flight number, seat number and airport codes match in any case (`abc123` = `ABC123`).
 - **`search_flights` returns an object:** `{ count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta, flights[] }`. `p_ref` is **optional**: with it, cheapest = lowest `price_delta` excluding the current flight; without it, cheapest = lowest `base_fare`, `cheapest_price_delta` is `null`, and every flight `price_delta` is `null`.
-- **`get_seat_map` returns an object:** `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, seats[] }`.
+- **`get_seat_map` returns an object:** `{ flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats, seats[] }`. Summary lists are FREE(€0)-first; seat types are window (A/F), aisle (C/D), middle (B/E), emergency_row (12–13). Middle seats are excluded from the aisle list.
 - **`get_booking`** includes `seat_type` and `baggage_weight_kg` (23) alongside the pricing breakdown.
 - **Any change re-opens the booking:** `change_flight` / `change_seat` / `change_baggage` set `status='pending'` and clear `boarding_pass_ref` until `confirm_booking` runs.
 - `change_flight` clears the seat; changing to the current flight returns `already_on_flight` (seat kept).

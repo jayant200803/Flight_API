@@ -178,7 +178,7 @@
           "Flights"
         ],
         "summary": "Get seat map",
-        "description": "Returns all 180 seats for a flight: seat number, row/column, type (window/aisle/emergency_row), status and surcharge.",
+        "description": "Returns all 180 seats plus free-first summary lists per type. Seat types: window (A/F, €0), aisle (C/D, €0), middle (B/E, €0), emergency_row (rows 12-13, €25); front rows 1-5 +€15.",
         "requestBody": {
           "required": true,
           "content": {
@@ -200,7 +200,7 @@
         },
         "responses": {
           "200": {
-            "description": "Object: { flight_number, total, available_count, available_window_seats, available_aisle_seats, seats[] }"
+            "description": "Object: { flight_number, total, available_count, available_window_seats, available_aisle_seats, available_middle_seats, seats[] }. Summary lists are free(0 EUR)-first. Seat types: window(A/F), aisle(C/D), middle(B/E), emergency_row(12-13)."
           }
         },
         "operationId": "get_seat_map"

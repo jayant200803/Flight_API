@@ -6,8 +6,10 @@
 
 -- ---------- Enums ----------
 do $$ begin
-  create type seat_type   as enum ('window','aisle','emergency_row');
+  create type seat_type   as enum ('window','aisle','middle','emergency_row');
 exception when duplicate_object then null; end $$;
+-- ensure 'middle' exists on databases created before it was added (idempotent)
+alter type seat_type add value if not exists 'middle';
 
 do $$ begin
   create type seat_status as enum ('available','booked','blocked');
