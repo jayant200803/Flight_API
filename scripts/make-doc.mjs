@@ -126,6 +126,8 @@ const endpoints = [
       ['available_window_seats', 'string', 'Free window seats, FREE(€0) first, e.g. "6A, 6F" (first 10)'],
       ['available_aisle_seats', 'string', 'Free aisle seats C/D only, free first (first 10)'],
       ['available_middle_seats', 'string', 'Free middle seats B/E, free first (first 10)'],
+      ['available_front_row_seats', 'string', 'Free front-row seats, rows 1-5 (+€15, extra legroom)'],
+      ['available_emergency_row_seats', 'string', 'Free emergency/exit seats, rows 12-13 (+€25, extra legroom)'],
       ['seats[].seat_number', 'string', 'e.g. 6A'],
       ['seats[].seat_type', 'string', 'window (A/F) / aisle (C/D) / middle (B/E) / emergency_row'],
       ['seats[].status', 'string', 'available / booked / blocked'],
@@ -142,6 +144,8 @@ const endpoints = [
       ['available_window_seats', 'string', 'Free window seats, free(€0) first'],
       ['available_aisle_seats', 'string', 'Free aisle seats C/D'],
       ['available_middle_seats', 'string', 'Free middle seats B/E'],
+      ['available_front_row_seats', 'string', 'Front rows 1-5 (+€15 legroom)'],
+      ['available_emergency_row_seats', 'string', 'Emergency rows 12-13 (+€25 legroom)'],
     ],
   },
   {

@@ -157,7 +157,7 @@ drop function if exists get_seat_map(text);
 drop function if exists get_seat_map(text, boolean);
 create or replace function get_seat_map(p_flight_number text, p_summary_only boolean default false)
 returns json language plpgsql security definer set search_path = public as $$
-declare arr jsonb; win text; ais text; mid text; avail int; tot int;
+declare arr jsonb; win text; ais text; mid text; emr text; frnt text; avail int; tot int;
 begin
   -- summaries for the voice agent: first 10 available of each type, FREE (€0) first.
   select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
@@ -175,6 +175,17 @@ begin
     from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'middle' and s.status = 'available'
     order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  -- extra-legroom options: emergency/exit rows (+€25) and front rows 1-5 (+€15)
+  select string_agg(seat_number, ', ' order by row_number, column_letter) into emr from (
+    select s.seat_number, s.row_number, s.column_letter
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'emergency_row' and s.status = 'available'
+    order by s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by row_number, column_letter) into frnt from (
+    select s.seat_number, s.row_number, s.column_letter
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.row_number between 1 and 5 and s.status = 'available'
+    order by s.row_number, s.column_letter limit 10) z;
   select count(*) filter (where s.status = 'available'), count(*)
     into avail, tot
     from seats s join flights f on f.flight_id = s.flight_id
@@ -188,7 +199,9 @@ begin
       'available_count', avail,
       'available_window_seats', coalesce(win, ''),
       'available_aisle_seats', coalesce(ais, ''),
-      'available_middle_seats', coalesce(mid, '')
+      'available_middle_seats', coalesce(mid, ''),
+      'available_front_row_seats', coalesce(frnt, ''),
+      'available_emergency_row_seats', coalesce(emr, '')
     );
   end if;
 
@@ -208,6 +221,8 @@ begin
     'available_window_seats', coalesce(win, ''),
     'available_aisle_seats', coalesce(ais, ''),
     'available_middle_seats', coalesce(mid, ''),
+    'available_front_row_seats', coalesce(frnt, ''),
+    'available_emergency_row_seats', coalesce(emr, ''),
     'seats', arr
   );
 end $$;
@@ -218,7 +233,7 @@ end $$;
 drop function if exists get_seat_options(text);
 create or replace function get_seat_options(p_flight_number text)
 returns json language plpgsql security definer set search_path = public as $$
-declare win text; ais text; mid text; avail int;
+declare win text; ais text; mid text; emr text; frnt text; avail int;
 begin
   select string_agg(seat_number, ', ' order by base_price_delta, row_number, column_letter) into win from (
     select s.seat_number, s.row_number, s.column_letter, s.base_price_delta
@@ -235,6 +250,16 @@ begin
     from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'middle' and s.status = 'available'
     order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by row_number, column_letter) into emr from (
+    select s.seat_number, s.row_number, s.column_letter
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.seat_type = 'emergency_row' and s.status = 'available'
+    order by s.row_number, s.column_letter limit 10) z;
+  select string_agg(seat_number, ', ' order by row_number, column_letter) into frnt from (
+    select s.seat_number, s.row_number, s.column_letter
+    from seats s join flights f on f.flight_id = s.flight_id
+    where upper(f.flight_number) = upper(p_flight_number) and s.row_number between 1 and 5 and s.status = 'available'
+    order by s.row_number, s.column_letter limit 10) z;
   select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
   return json_build_object(
@@ -242,7 +267,9 @@ begin
     'available_count', avail,
     'available_window_seats', coalesce(win, ''),
     'available_aisle_seats', coalesce(ais, ''),
-    'available_middle_seats', coalesce(mid, '')
+    'available_middle_seats', coalesce(mid, ''),
+    'available_front_row_seats', coalesce(frnt, ''),
+    'available_emergency_row_seats', coalesce(emr, '')
   );
 end $$;
 

@@ -183,8 +183,15 @@ const smSum = await call('get_seat_map', { p_flight_number: 'NS1156', p_summary_
 ok(smSum.seats === undefined, 'summary_only=true omits seats array');
 ok(smSum.total === 180 && n(smSum.available_count) > 0, 'summary_only still has total + available_count');
 ok(smSum.available_window_seats.startsWith('6A, 6F'), 'summary_only window list free-first');
+// extra-legroom lists
+ok(typeof smSum.available_front_row_seats === 'string' && typeof smSum.available_emergency_row_seats === 'string', 'summary has front_row + emergency_row lists');
+const fr = smSum.available_front_row_seats.split(', ').filter(Boolean);
+ok(fr.length > 0 && fr.every(s => parseInt(s) >= 1 && parseInt(s) <= 5), 'front_row seats are rows 1-5: ' + smSum.available_front_row_seats);
+const er = smSum.available_emergency_row_seats.split(', ').filter(Boolean);
+ok(er.length > 0 && er.every(s => [12,13].includes(parseInt(s))), 'emergency_row seats are rows 12-13: ' + smSum.available_emergency_row_seats);
 const smFull = await call('get_seat_map', { p_flight_number: 'NS1156' });
 ok(Array.isArray(smFull.seats) && smFull.seats.length === 180, 'default (summary_only=false) still returns full 180 seats');
+ok(typeof smFull.available_front_row_seats === 'string' && typeof smFull.available_emergency_row_seats === 'string', 'full map also has front_row + emergency_row lists');
 const hasExit = seatmap.some(s => s.seat_type === 'emergency_row' && n(s.base_price_delta) === 25);
 ok(hasExit, 'emergency_row seats carry +25 surcharge');
 const hasFront = seatmap.some(s => s.row_number <= 2 && n(s.base_price_delta) === 15);

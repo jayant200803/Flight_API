@@ -205,7 +205,7 @@
         },
         "responses": {
           "200": {
-            "description": "Object with summary fields first; includes seats[] unless p_summary_only=true."
+            "description": "Object: summary fields first (incl. available_front_row_seats rows 1-5 +15 EUR, available_emergency_row_seats rows 12-13 +25 EUR), then seats[] unless p_summary_only=true."
           }
         },
         "operationId": "get_seat_map"
@@ -392,7 +392,7 @@
           "Flights"
         ],
         "summary": "Seat options (agent)",
-        "description": "Lightweight seat summary for the voice agent: { flight_number, available_count, available_window_seats, available_aisle_seats, available_middle_seats }. No seats array, so agent platforms that cap response parsing always read the fields. Free (0 EUR) seats listed first.",
+        "description": "Lightweight seat summary for the voice agent: flight_number, available_count, and available_window/aisle/middle/front_row/emergency_row_seats lists. No seats array.",
         "operationId": "get_seat_options",
         "requestBody": {
           "required": true,
