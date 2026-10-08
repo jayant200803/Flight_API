@@ -61,9 +61,10 @@ begin
 end $$;
 
 -- 2) GET /flights/search  (returns up to 6 flights with price delta vs current booking)
+drop function if exists search_flights(text,text,date,text);
 create or replace function search_flights(
   p_origin text, p_destination text, p_date date, p_ref text default null)
-returns jsonb language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public as $$
 declare base numeric(10,2); v_cur_fnum text; arr jsonb; cheap jsonb;
 begin
   -- baseline + current flight number (only when a booking ref is given)
@@ -104,7 +105,8 @@ begin
     limit 1
   ) x;
 
-  return jsonb_build_object(
+  -- summary fields FIRST (ordered json), flights array LAST
+  return json_build_object(
     'count', jsonb_array_length(arr),
     'cheapest_flight_number', cheap->>'flight_number',
     'cheapest_base_fare', (cheap->>'base_fare')::numeric,
@@ -148,8 +150,11 @@ begin
 end $$;
 
 -- 4) GET /flights/{id}/seats  (seat map)
+-- Returns json (ordered) so the summary fields come FIRST, before the big seats
+-- array — some agent platforms truncate large replies and would miss trailing keys.
+drop function if exists get_seat_map(text);
 create or replace function get_seat_map(p_flight_number text)
-returns jsonb language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public as $$
 declare arr jsonb; win text; ais text; mid text; avail int;
 begin
   select coalesce(jsonb_agg(row_to_json(t) order by (t.row_number, t.column_letter)), '[]'::jsonb)
@@ -178,7 +183,8 @@ begin
     order by s.base_price_delta, s.row_number, s.column_letter limit 10) z;
   select count(*) into avail from seats s join flights f on f.flight_id = s.flight_id
     where upper(f.flight_number) = upper(p_flight_number) and s.status = 'available';
-  return jsonb_build_object(
+  -- summary fields FIRST (ordered json), seats array LAST
+  return json_build_object(
     'flight_number', p_flight_number,
     'total', jsonb_array_length(arr),
     'available_count', avail,
