@@ -262,11 +262,13 @@ ok(b124.flight.flight_number === 'NS1142', 'ABC124 starts on NS1142');
 ok(b124.seat_number === '23D', 'ABC124 has its own seat 23D');
 ok(n(b124.pricing.total_price) === 250 && b124.status === 'confirmed', 'ABC124 is €250, confirmed (fresh)');
 ok(b124.passenger_name === 'Priya Nair', 'ABC124 has its own passenger name (Priya Nair, not Aarav)');
+const b152 = await call('get_booking', { p_ref: 'ABC152' });
+ok(!b152.error && b152.booking_reference === 'ABC152' && b152.seat_number === '30C', 'ABC152 exists (seat 30C) — pool extended to 30 bookings');
 
 section('reset_demo RPC — restores ALL demo bookings to the starting state');
 const rd = await call('reset_demo', {});
-ok(rd.reset_count >= 12, `reset_demo reset ${rd.reset_count} bookings`);
-ok(Array.isArray(rd.references) && rd.references.includes('ABC123') && rd.references.includes('ABC134'), 'references ABC123..ABC134 present');
+ok(rd.reset_count >= 30, `reset_demo reset ${rd.reset_count} bookings`);
+ok(Array.isArray(rd.references) && rd.references.includes('ABC123') && rd.references.includes('ABC152'), 'references ABC123..ABC152 present');
 ok(rd.booking.flight.flight_number === 'NS1142', 'reset_demo -> ABC123 back on NS1142');
 ok(rd.booking.seat_number === '23C', 'reset_demo -> ABC123 seat 23C');
 ok(n(rd.booking.pricing.total_price) === 250, 'reset_demo -> ABC123 total 250');

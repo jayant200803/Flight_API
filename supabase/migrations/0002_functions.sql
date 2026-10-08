@@ -396,12 +396,14 @@ begin
   );
 end $$;
 
--- 8) Demo helper: reset ALL demo bookings (ABC123..ABC134) to the starting state
+-- 8) Demo helper: reset ALL demo bookings (ABC123..ABC152) to the starting state
 --    (each on NS1142, its own aisle seat, 1 bag, EUR 250, confirmed). Re-runnable.
 create or replace function reset_demo()
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_fid bigint; r record; idx int; v_seat text;
-        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E'];
+        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E',
+                               '26B','26C','26D','26E','27B','27C','27D','27E','28B','28C','28D','28E',
+                               '29B','29C','29D','29E','30B','30C'];
 begin
   select flight_id into v_fid from flights where flight_number = 'NS1142';
 

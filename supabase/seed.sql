@@ -72,15 +72,20 @@ update seats set status='booked', booking_id=null
 update seats set status='available', booking_id=null
  where flight_id=(select flight_id from flights where flight_number='NS1156') and seat_number in ('6A','6F');
 
--- ---------- 12 identical demo bookings: ABC123 .. ABC134 ----------
--- Each starts on NS1142, 1 bag, EUR 250, confirmed, with its own aisle seat
+-- ---------- 30 demo bookings: ABC123 .. ABC152 (each a different passenger) ----------
+-- Each starts on NS1142, 1 bag, EUR 250, confirmed, with its own seat
 -- (distinct seats so there is no clash on the shared flight). ABC123 = seat 23C.
 do $$
 declare v_cid bigint; v_fid bigint; i int; v_ref text; v_seat text; v_bid bigint; v_name text; v_first text;
-        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E'];
+        seats text[] := array['23C','23D','23E','23B','24B','24C','24D','24E','25B','25C','25D','25E',
+                               '26B','26C','26D','26E','27B','27C','27D','27E','28B','28C','28D','28E',
+                               '29B','29C','29D','29E','30B','30C'];
         names text[] := array['Aarav Mehta','Priya Nair','Liam O''Brien','Sofia Rossi','Kenji Tanaka',
                                'Amara Okafor','Lucas Muller','Ingrid Larsen','Diego Fernandez','Mei Lin',
-                               'Omar Haddad','Chloe Dubois'];
+                               'Omar Haddad','Chloe Dubois','Noah Smith','Yuki Sato','Fatima Khan',
+                               'Mateo Silva','Hannah Kim','Ravi Patel','Elena Petrova','Tom Nguyen',
+                               'Grace Lee','Carlos Mendez','Aisha Rahman','Jack Wilson','Nina Kovac',
+                               'Samuel Osei','Lena Novak','Arjun Rao','Maria Garcia','David Cohen'];
 begin
   select flight_id into v_fid from flights where flight_number='NS1142';
   for i in 1 .. array_length(seats,1) loop

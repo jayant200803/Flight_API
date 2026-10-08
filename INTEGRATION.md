@@ -54,7 +54,7 @@ With `supabase-js`:  `supabase.rpc('function_name', { ...args })`
 | `change_baggage` | Set number of bags (1 incl., €45/extra) | `p_ref`, `p_baggage_count` |
 | `quote_booking` | Itemised price change vs last confirmed | `p_ref` |
 | `confirm_booking` | Lock booking, issue boarding pass | `p_ref` |
-| `reset_demo` | Reset ALL demo bookings (ABC123..ABC134) to the start state | *(none)* |
+| `reset_demo` | Reset ALL demo bookings (ABC123..ABC152) to the start state | *(none)* |
 
 ### Response shapes to note (voice-agent friendly)
 - **`search_flights`** returns an **object**: `{ count, cheapest_flight_number, cheapest_base_fare, cheapest_price_delta, flights: [...] }`. The list is under `flights`. **`p_ref` is optional** — with it, cheapest = lowest `price_delta` (excluding the current flight) and each flight has a `price_delta`; without it, cheapest = lowest `base_fare`, `cheapest_price_delta` is `null`, and every flight's `price_delta` is `null`.
@@ -70,7 +70,7 @@ Possible values: `booking_not_found`, `flight_not_found`, `already_on_flight` (c
 
 ## 4. Demo data
 
-- Booking references: **ABC123 … ABC134** — 12 bookings, **each a different passenger** (ABC123 = Aarav Mehta, ABC124 = Priya Nair, …). **Use a fresh reference for each demo/tester** so runs don't collide. All start the same (NS1142, €250, 1 bag, confirmed) with their own aisle seat (ABC123 = 23C, ABC124 = 23D, …).
+- Booking references: **ABC123 … ABC152** — 30 bookings, **each a different passenger** (ABC123 = Aarav Mehta, ABC124 = Priya Nair, …). **Use a fresh reference for each demo/tester** so runs don't collide. All start the same (NS1142, €250, 1 bag, confirmed) with their own aisle seat (ABC123 = 23C, ABC124 = 23D, …).
 - Route: **SIN → NRT**. The demo booking is on **2026-10-08** (Thu); flights are seeded for **2026-10-08 → 2026-10-21**, so the agent can search any date in that range (8 Oct is the canonical demo day; other days have normal availability and their own flight numbers).
 - Starts on **NS1142**, seat **23C**, **€250**
 - Flights: `NS1156` cheapest (−€60), `NS1150` (−€35), `NS1180` (−€20, low availability), `NS1120` sold out, `NS1134` at 09:40
