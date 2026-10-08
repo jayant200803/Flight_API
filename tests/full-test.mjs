@@ -124,6 +124,11 @@ ok(none.count === 0 && none.flights.length === 0, 'unknown route returns empty l
 ok(none.cheapest_flight_number === null, 'no cheapest when no flights');
 const lower = await call('search_flights', { p_origin: 'sin', p_destination: 'nrt', p_date: '2026-10-08', p_ref: REF });
 ok(lower.flights.length === 6, 'origin/destination are case-insensitive');
+// flights exist on other days too (not just 8 Oct)
+const d9 = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-09', p_ref: REF });
+ok(d9.count === 6, '2026-10-09 returns 6 flights');
+const d21 = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-21', p_ref: REF });
+ok(d21.count === 6, '2026-10-21 returns 6 flights');
 // p_ref is optional: caller with no booking -> cheapest by lowest base_fare, deltas are null
 const noRef = await call('search_flights', { p_origin: 'SIN', p_destination: 'NRT', p_date: '2026-10-08' });
 ok(noRef.flights.length === 6, 'search works without p_ref (optional)');

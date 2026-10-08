@@ -14,6 +14,24 @@ insert into flights (flight_number, origin_airport, destination_airport, departu
 ('NS1156','SIN','NRT','2026-10-08 20:30:00','2026-10-08 22:15:00',180,190.00,'Boeing 787-9'), -- cheapest (-60)
 ('NS1180','SIN','NRT','2026-10-08 23:00:00','2026-10-09 00:45:00',180,230.00,'Airbus A350-900'); -- -20, LOW availability
 
+-- ---------- Flights for additional days (2026-10-09 .. 2026-10-21) ----------
+-- Same 6 daily options (SIN->NRT), unique numbers per day (NS<MMDD><seq>),
+-- normal availability. Lets the agent search any date in this range.
+do $$
+declare d date; i int;
+begin
+  for i in 1..13 loop
+    d := date '2026-10-08' + i;
+    insert into flights (flight_number, origin_airport, destination_airport, departure_time, arrival_time, total_seats, base_fare, aircraft_type) values
+      ('NS'||to_char(d,'MMDD')||'1','SIN','NRT', d + time '14:05', d + time '15:50', 180, 250.00, 'Boeing 787-9'),
+      ('NS'||to_char(d,'MMDD')||'2','SIN','NRT', d + time '07:00', d + time '08:45', 180, 260.00, 'Airbus A350-900'),
+      ('NS'||to_char(d,'MMDD')||'3','SIN','NRT', d + time '09:40', d + time '11:25', 180, 250.00, 'Boeing 787-9'),
+      ('NS'||to_char(d,'MMDD')||'4','SIN','NRT', d + time '17:15', d + time '19:00', 180, 215.00, 'Airbus A350-900'),
+      ('NS'||to_char(d,'MMDD')||'5','SIN','NRT', d + time '20:30', d + time '22:15', 180, 190.00, 'Boeing 787-9'),
+      ('NS'||to_char(d,'MMDD')||'6','SIN','NRT', d + time '23:00', (d + 1) + time '00:45', 180, 230.00, 'Airbus A350-900');
+  end loop;
+end $$;
+
 -- ---------- Customer ----------
 insert into customers (account_number, customer_name, date_of_birth, email, phone, crm_id) values
 ('AC7620','Shivam Sharma','1992-07-18','shivam@example.com','+65 8123 4567','CRM-AC7620');
